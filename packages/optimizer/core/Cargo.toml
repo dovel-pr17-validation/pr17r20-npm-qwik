@@ -24,11 +24,11 @@ base64 = "0.22.1"
 pathdiff = "0.2.1"
 relative-path = "1.8.0"
 lazy_static = "1.4.0"
-anyhow = "1.0.70"
+anyhow = "1.0.104"
 derivative = "2.2.0"
 rayon = "1.7.0"
 path-slash="0.2.1"
-indexmap = "2.7.1"
+indexmap = "2.14.2"
 
 [dev-dependencies]
 insta = "1.29.0"
