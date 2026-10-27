@@ -1,0 +1,115 @@
+import { isAbsolute, resolve } from 'node:path';
+import { normalizePath } from '../utils/fs';
+import { ensureSlash } from '../utils/pathname';
+import type { RoutingContext, NormalizedPluginOptions, PluginOptions } from './types';
+
+export function createBuildContext(
+  rootDir: string,
+  viteBasePath: string,
+  userOpts?: PluginOptions,
+  target?: 'ssr' | 'client',
+  dynamicImports?: boolean
+) {
+  const ctx: RoutingContext = {
+    rootDir: normalizePath(rootDir),
+    opts: normalizeOptions(rootDir, viteBasePath, userOpts),
+    routeTrie: { _files: [], children: new Map() },
+    routes: [],
+    serverPlugins: [],
+    layouts: [],
+    entries: [],
+    serviceWorkers: [],
+    menus: [],
+    diagnostics: [],
+    frontmatter: new Map(),
+    target: target || 'ssr',
+    dynamicImports: target === 'client' || !!dynamicImports,
+    isDirty: true,
+    activeBuild: null,
+  };
+  return ctx;
+}
+
+export function resetBuildContext(ctx: RoutingContext | null) {
+  if (ctx) {
+    ctx.routes.length = 0;
+    ctx.layouts.length = 0;
+    ctx.entries.length = 0;
+    ctx.menus.length = 0;
+    ctx.diagnostics.length = 0;
+    ctx.frontmatter.clear();
+    ctx.isDirty = true;
+  }
+}
+
+/**
+ * Resolve the app's base pathname from plugin options and vite's `base`. Shared by option
+ * normalization and the `config()`-hook `define` (which runs before the build context exists).
+ */
+export function resolveBasePathname(
+  userOpts: PluginOptions | undefined,
+  viteBasePath: string
+): string {
+  let basePathname =
+    typeof (userOpts as any)?.baseUrl === 'string'
+      ? // baseUrl deprecated
+        ((userOpts as any).baseUrl as string)
+      : typeof userOpts?.basePathname === 'string'
+        ? userOpts.basePathname
+        : viteBasePath || '/';
+  if (!basePathname.endsWith('/')) {
+    basePathname = ensureSlash(basePathname);
+  }
+  return new URL(basePathname, 'https://qwik.dev/').pathname;
+}
+
+function normalizeOptions(
+  rootDir: string,
+  viteBasePath: string,
+  userOpts: PluginOptions | undefined
+) {
+  if (!(viteBasePath.startsWith('/') && viteBasePath.endsWith('/'))) {
+    // TODO v2: make this an error
+    console.error(
+      `warning: vite's config.base must begin and end with /. This will be an error in v2. If you have a valid use case, please open an issue.`
+    );
+    if (!viteBasePath.endsWith('/')) {
+      viteBasePath = ensureSlash(viteBasePath);
+    }
+  }
+  const opts: NormalizedPluginOptions = { ...userOpts } as any;
+
+  if (typeof opts.routesDir !== 'string') {
+    opts.routesDir = resolve(rootDir, 'src', 'routes');
+  } else if (!isAbsolute(opts.routesDir)) {
+    opts.routesDir = resolve(rootDir, opts.routesDir);
+  }
+  opts.routesDir = normalizePath(opts.routesDir);
+
+  if (typeof opts.serverPluginsDir !== 'string') {
+    opts.serverPluginsDir = opts.routesDir;
+  } else if (!isAbsolute(opts.serverPluginsDir)) {
+    opts.serverPluginsDir = resolve(rootDir, opts.serverPluginsDir);
+  }
+  opts.serverPluginsDir = normalizePath(opts.serverPluginsDir);
+
+  if (
+    typeof (opts as any).baseUrl !== 'string' &&
+    typeof opts.basePathname === 'string' &&
+    !opts.basePathname.endsWith('/')
+  ) {
+    // TODO: in v2 make this an error
+    console.error(
+      `Warning: qwik-router plugin basePathname must end with /. This will be an error in v2`
+    );
+  }
+  opts.basePathname = resolveBasePathname(userOpts, viteBasePath);
+
+  opts.mdx = opts.mdx || {};
+  opts.platform = opts.platform || {};
+  if (opts.strictLoaders === undefined) {
+    opts.strictLoaders = true;
+  }
+
+  return opts;
+}

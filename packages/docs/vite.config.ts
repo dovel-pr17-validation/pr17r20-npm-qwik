@@ -1,0 +1,288 @@
+import { qwikInsights } from '@qwik.dev/core/insights/vite';
+import { qwikVite } from '@qwik.dev/core/optimizer';
+import { partytownVite } from '@qwik.dev/partytown/utils';
+import { qwikReact } from '@qwik.dev/react/vite';
+import { qwikRouter } from '@qwik.dev/router/vite';
+import { qds } from '@qds.dev/tools/vite';
+import { transformerColorizedBrackets } from '@shikijs/colorized-brackets';
+import shikiRehype from '@shikijs/rehype';
+import githubDark from '@shikijs/themes/github-dark';
+import githubLight from '@shikijs/themes/github-light';
+import { transformerMetaHighlight, transformerMetaWordHighlight } from '@shikijs/transformers';
+import type { ShikiTransformer } from '@shikijs/types';
+import tailwindcss from '@tailwindcss/vite';
+import path, { resolve } from 'node:path';
+// import { qwikDevtools } from '@qwik.dev/devtools';
+import { defineConfig, loadEnv, type Connect, type Plugin, type UserConfig } from 'vite';
+import { compiledStringPlugin } from '../../scripts/compiled-string-plugin.js';
+import { blogRssData } from './vite-blog-rss';
+import { docsUpdatedData } from './vite-docs-updated';
+import { examplesData, playgroundData, rawSource, tutorialData } from './vite.repl-apps';
+import { sourceResolver } from './vite.source-resolver';
+
+const insightsApiKey = loadEnv('', '.', 'PUBLIC').PUBLIC_QWIK_INSIGHTS_KEY;
+const docsDir = new URL(import.meta.url).pathname;
+
+// https://github.com/vitejs/vite/issues/15012#issuecomment-1825035992
+const muteWarningsPlugin = (warningsToIgnore: string[][]): Plugin => {
+  const mutedMessages = new Set();
+  return {
+    name: 'mute-warnings',
+    enforce: 'pre',
+    config: (userConfig) => {
+      const origOnLog = userConfig.build?.rolldownOptions?.onLog;
+      return {
+        build: {
+          rolldownOptions: {
+            onLog(type, warning, defaultHandler) {
+              if (type === 'warn') {
+                if (warning.code) {
+                  const muted = warningsToIgnore.find(
+                    ([code, message]) => code == warning.code && warning.message.includes(message)
+                  );
+
+                  if (muted) {
+                    mutedMessages.add(muted.join());
+                    return;
+                  }
+                }
+              }
+              origOnLog ? origOnLog(type, warning, defaultHandler) : defaultHandler(type, warning);
+            },
+          },
+        },
+      };
+    },
+    closeBundle() {
+      const diff = warningsToIgnore.filter((x) => !mutedMessages.has(x.join()));
+      if (diff.length > 0) {
+        this.warn('Some of your muted warnings never appeared during the build process:');
+        diff.forEach((m) => this.warn(`- ${m.join(': ')}`));
+      }
+    },
+  };
+};
+
+/** Paths that host the REPL, which needs crossOriginIsolated for its SharedArrayBuffer. */
+const REPL_PATHS = ['/playground', '/tutorial', '/examples', '/repl'];
+
+const crossOriginIsolateRepl = (): Plugin => {
+  const isolateRepl: Connect.NextHandleFunction = (req, res, next) => {
+    if (
+      REPL_PATHS.some((replPath) => req.url?.startsWith(replPath)) ||
+      new URL(req.url || '/', 'http://localhost').searchParams.has('worker_file')
+    ) {
+      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    }
+    next();
+  };
+  return {
+    name: 'cross-origin-isolate-repl',
+    configureServer: (server) => {
+      server.middlewares.use(isolateRepl);
+    },
+    configurePreviewServer: (server) => {
+      server.middlewares.use(isolateRepl);
+    },
+  };
+};
+
+function transformerShowEmptyLines(): ShikiTransformer {
+  return {
+    line(node) {
+      if (node.children.length === 0) {
+        node.children = [{ type: 'text', value: ' ' }];
+        return node;
+      }
+    },
+  };
+}
+
+function transformerMetaShowTitle(): ShikiTransformer {
+  return {
+    root(node) {
+      const meta = this.options.meta?.__raw;
+      if (!meta) {
+        return;
+      }
+      const titleMatch = meta.match(/title="([^"]*)"/);
+      if (!titleMatch) {
+        return;
+      }
+      const title = titleMatch[1] ?? '';
+      if (title.length > 0) {
+        node.children.unshift({
+          type: 'element',
+          tagName: 'div',
+          properties: {
+            class: 'shiki-title',
+          },
+          children: [{ type: 'text', value: title }],
+        });
+      }
+      meta.replace(titleMatch[0], '');
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  const routesDir = resolve('src', 'routes');
+  const isProd = mode === 'production';
+  const clientConditions = [
+    'browser',
+    'worker',
+    isProd ? 'production' : 'development',
+    'import',
+    'default',
+  ];
+  const ssrConditions = ['import', 'worker', isProd ? 'production' : 'development', 'default'];
+
+  return {
+    environments: {
+      client: {
+        optimizeDeps: {
+          entries: ['./src/routes/**/index.tsx', './src/routes/**/layout.tsx'],
+          exclude: [
+            '@modular-forms/qwik',
+            'qwik-image',
+            // optimizing breaks the wasm import
+            '@rolldown/browser',
+            '@rolldown/browser/experimental',
+            'oxc-walker',
+            '@qwik.dev/devtools',
+          ],
+        },
+        resolve: {
+          conditions: clientConditions,
+        },
+      },
+      ssr: {
+        resolve: {
+          noExternal: [
+            '@mui/material',
+            '@mui/system',
+            '@emotion/react',
+            '@algolia/autocomplete-core/dist/esm/resolve',
+            '@algolia/autocomplete-core',
+            '@algolia/autocomplete-shared',
+            'algoliasearch/lite',
+            'algoliasearch',
+            '@algolia/autocomplete-core/dist/esm/reshape',
+            'algoliasearch/dist/algoliasearch-lite.esm.browser',
+          ],
+          conditions: ssrConditions,
+        },
+      },
+    },
+    preview: {
+      headers: {
+        'Cache-Control': 'public, max-age=600',
+      },
+    },
+    define: {
+      // The rolldown deps use this
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+    },
+    resolve: {
+      // Every server environment, including the adapter's `ssg`, bundles these Qwik libraries;
+      // @modular-forms/qwik is built with Qwik 1.
+      noExternal: ['qwik-image', '@modular-forms/qwik', '@qds.dev/ui', '@qds.dev/tools'],
+      alias: [
+        {
+          find: '~',
+          replacement: path.resolve(__dirname, 'src'),
+        },
+        {
+          // HACK: For some reason supabase imports node-fetch but only in CloudFlare build
+          // This hack is here to prevent the import from happening since we don't need to
+          // polyfill fetch in the edge.
+          find: '@supabase/node-fetch',
+          replacement: path.resolve(__dirname, 'src', 'empty.ts'),
+        },
+        {
+          find: '@docsearch/css',
+          replacement: path.resolve(__dirname, 'node_modules/@docsearch/css/dist/style.css'),
+        },
+        {
+          // The REPL worker bundles oxc-walker, which statically imports node:module.
+          find: 'node:module',
+          replacement: path.resolve(__dirname, 'src', 'repl', 'bundler', 'node-module-shim.ts'),
+        },
+      ],
+    },
+
+    plugins: [
+      crossOriginIsolateRepl(),
+      qds({ icons: true, asChild: true }),
+      // some imported react code has sourcemap issues
+      muteWarningsPlugin([
+        ['SOURCEMAP_ERROR', "Can't resolve original location of error"],
+        ['MODULE_LEVEL_DIRECTIVE', 'use client'],
+      ]),
+      rawSource(),
+      compiledStringPlugin(),
+      qwikRouter({
+        mdxPlugins: {
+          rehypeSyntaxHighlight: false,
+          remarkGfm: true,
+          rehypeAutolinkHeadings: true,
+        },
+        mdx: {
+          providerImportSource: '~/components/glossary/mdx-components',
+          rehypePlugins: [
+            [
+              shikiRehype,
+              {
+                themes: { light: githubLight, dark: githubDark },
+                defaultColor: false,
+                transformers: [
+                  transformerMetaHighlight(),
+                  transformerMetaWordHighlight(),
+                  transformerColorizedBrackets(),
+                  transformerShowEmptyLines(),
+                  transformerMetaShowTitle(),
+                ],
+              },
+            ],
+          ],
+        },
+      }),
+      qwikVite({
+        debug: false,
+        tsOptimizer: true,
+        experimental: ['each', 'show', 'pendingBoundary', 'catchBoundary', 'insights'],
+        devTools: { hmr: false },
+      }),
+      partytownVite({
+        dest: resolve('dist', '~partytown'),
+      }),
+      examplesData(routesDir),
+      playgroundData(routesDir),
+      blogRssData(routesDir),
+      docsUpdatedData(routesDir),
+      tutorialData(routesDir),
+      sourceResolver(docsDir),
+      qwikReact(),
+      qwikInsights({ publicApiKey: insightsApiKey }),
+      tailwindcss(),
+      // qwikDevtools(),
+    ],
+    build: {
+      sourcemap: true,
+      rolldownOptions: {
+        output: {
+          assetFileNames: 'assets/[hash]-[name].[ext]',
+        },
+        external: ['@docsearch/css', 'fsevents'],
+      },
+    },
+    worker: {
+      format: 'es' as const,
+    },
+    clearScreen: false,
+    server: {
+      port: 3000,
+    },
+  } as UserConfig;
+});

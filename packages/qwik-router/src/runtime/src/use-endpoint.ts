@@ -1,0 +1,74 @@
+import type { RouteActionValue } from './types';
+import { _deserialize } from '@qwik.dev/core/internal';
+import { ensureSlash } from '../../utils/pathname';
+import { QACTION_KEY } from './constants';
+
+/**
+ * Submit an action to the server and get the result.
+ *
+ * POSTs to the route URL with `qaction={actionId}` appended and `Accept: application/json`. The
+ * server runs the action and returns the action result, optionally with the loader hashes that
+ * should be invalidated.
+ */
+export async function submitAction(
+  action: NonNullable<RouteActionValue>,
+  routeUrl: URL
+): Promise<{
+  status: number;
+  result: unknown;
+  redirect?: string | URL;
+  loaderHashes?: string[];
+}> {
+  const pathBase = ensureSlash(routeUrl.pathname);
+  const searchParams = new URLSearchParams(routeUrl.search);
+  searchParams.set(QACTION_KEY, action.id);
+  const search = searchParams.toString();
+  const url = `${pathBase}?${search}`;
+
+  const actionData = action.data;
+  // Clear immediately so a task rerun can't re-submit the same payload
+  action.data = undefined;
+  let fetchOptions: RequestInit;
+
+  if (actionData instanceof FormData) {
+    fetchOptions = {
+      method: 'POST',
+      body: actionData,
+      headers: {
+        Accept: 'application/json',
+      },
+    };
+  } else {
+    fetchOptions = {
+      method: 'POST',
+      body: JSON.stringify(actionData),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Accept: 'application/json',
+      },
+    };
+  }
+
+  const response = await fetch(url, fetchOptions);
+
+  if (response.redirected) {
+    return { status: response.status, result: undefined, redirect: new URL(response.url) };
+  }
+
+  if ((response.headers.get('content-type') || '').includes('json')) {
+    const text = await response.text();
+    const data = await _deserialize<{
+      result: unknown;
+      redirect?: string;
+      loaderHashes?: string[];
+    }>(text);
+    return {
+      status: response.status,
+      result: data?.result,
+      redirect: data?.redirect,
+      loaderHashes: data?.loaderHashes,
+    };
+  }
+
+  throw new Error(`Unexpected action response (${response.status}): expected JSON`);
+}

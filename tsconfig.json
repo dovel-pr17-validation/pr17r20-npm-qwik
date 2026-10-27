@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["es2022", "DOM", "webworker", "DOM.Iterable"],
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "allowArbitraryExtensions": true,
+    "jsxImportSource": "@qwik.dev/core",
+    "declaration": true,
+    "outDir": "./dist-dev/tsc-out",
+    "declarationDir": "./dist-dev/dts-out",
+    "strict": true,
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "noUnusedLocals": true,
+    "paths": {
+      "@qwik.dev/optimizer": ["packages/optimizer/src"],
+      "@qwik-router-config": ["packages/qwik-router/src/runtime/src/qwik-router-config.ts"]
+    },
+    "types": ["node", "vite/client"],
+    "esModuleInterop": true,
+    "sourceRoot": ".",
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "."
+  },
+  "include": [
+    "packages/create-qwik",
+    "packages/supabase-auth-helpers-qwik",
+    "packages/qwik-react/src",
+    "packages/qwik-utils/src",
+    "starters/apps/*",
+    "e2e/qwik-e2e/apps/*",
+    "packages/qwik-react/vite",
+    "@types/deno.d.ts",
+    "@types/bun.d.ts",
+    "types.d.ts",
+    "packages/qwik-router/global.d.ts"
+  ],
+  "exclude": [
+    "packages/create-qwik/dist",
+    "packages/qwik/src",
+    "packages/*/lib",
+    "starters/apps/*/lib",
+    "starters/apps/*/dist",
+    "starters/apps/*/server",
+    "e2e/qwik-e2e/apps/*/lib",
+    "e2e/qwik-e2e/apps/*/dist",
+    "e2e/qwik-e2e/apps/*/server",
+    "scripts",
+    "e2e/qwik-e2e/dev-server.ts"
+  ]
+}

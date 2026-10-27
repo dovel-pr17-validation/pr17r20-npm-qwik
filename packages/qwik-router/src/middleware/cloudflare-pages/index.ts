@@ -1,0 +1,178 @@
+import { setServerPlatform } from '@qwik.dev/core/server';
+import type {
+  ServerRenderOptions,
+  ServerRequestEvent,
+} from '@qwik.dev/router/middleware/request-handler';
+import {
+  _TextEncoderStream_polyfill,
+  getErrorHtml,
+  isStaticPath,
+  mergeHeadersCookies,
+  requestHandler,
+} from '@qwik.dev/router/middleware/request-handler';
+import { isDev } from '@qwik.dev/core/build';
+import { limitRequestBody } from '../request-handler/request-body-limit';
+
+// @qwik.dev/router/middleware/cloudflare-pages
+
+/** @public */
+export function createQwikRouter(opts: QwikRouterCloudflarePagesOptions) {
+  try {
+    // https://developers.cloudflare.com/workers/configuration/compatibility-dates/#streams-constructors
+    // this will throw if CF compatibility_date < 2022-11-30
+    new globalThis.TextEncoderStream();
+  } catch {
+    globalThis.TextEncoderStream = _TextEncoderStream_polyfill as any;
+  }
+  if (opts.manifest) {
+    setServerPlatform(opts.manifest);
+  }
+  async function onCloudflarePagesFetch(
+    request: PlatformCloudflarePages['request'],
+    env: PlatformCloudflarePages['env'] & { ASSETS: { fetch: (req: Request) => Response } },
+    ctx: PlatformCloudflarePages['ctx']
+  ) {
+    try {
+      const url = new URL(request.url);
+
+      if (isStaticPath(request.method, url)) {
+        // known static path, let cloudflare handle it
+        return env.ASSETS.fetch(request);
+      }
+
+      // https://developers.cloudflare.com/workers/runtime-apis/cache/
+      const useCache =
+        url.hostname !== '127.0.0.1' &&
+        url.hostname !== 'localhost' &&
+        url.port === '' &&
+        request.method === 'GET' &&
+        !request.headers.has('Cookie') &&
+        !request.headers.has('Authorization');
+      const cacheKey = new Request(url.href, request);
+      const cache = useCache ? await caches.open('custom:qwikrouter') : null;
+      if (cache) {
+        const cachedResponse = await cache.match(cacheKey);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+      }
+
+      // platform.request shares the limited body, the original stream is locked by the limiter
+      request = limitRequestBody(request, opts.requestBodyLimit);
+
+      const serverRequestEv: ServerRequestEvent<Response> = {
+        mode: 'server',
+        locale: undefined,
+        url,
+        request,
+        env: {
+          get(key) {
+            return env[key];
+          },
+        },
+        getWritableStream: (status, headers, cookies, resolve) => {
+          const responseInit = {
+            status,
+            headers: mergeHeadersCookies(headers, cookies),
+          };
+          if (status === 204 || status === 205 || status === 304) {
+            resolve(new Response(null, responseInit));
+            return new WritableStream<Uint8Array>();
+          }
+          const { readable, writable } = new TransformStream<Uint8Array>();
+          const response = new Response(readable, responseInit);
+          resolve(response);
+          return writable;
+        },
+        getClientConn: () => {
+          return {
+            ip: request.headers.get('CF-connecting-ip') || '',
+            country: request.headers.get('CF-IPCountry') || '',
+          };
+        },
+        platform: {
+          request,
+          env,
+          ctx,
+        },
+      };
+
+      // send request to qwik router request handler
+      const handledResponse = await requestHandler(serverRequestEv, opts);
+      if (handledResponse) {
+        handledResponse.completion.then((completion) => {
+          if (completion) {
+            console.error(completion);
+          }
+        });
+        const response = await handledResponse.response;
+        if (response) {
+          if (response.ok && cache && isSharedCacheable(response)) {
+            // Store the fetched response as cacheKey
+            // Use waitUntil so you can return the response without blocking on
+            // writing to cache
+            ctx.waitUntil(cache.put(cacheKey, response.clone()));
+          }
+          return response;
+        }
+      }
+
+      // No matching route: respond with a minimal 404 (static paths get a plain message).
+      const notFoundHtml =
+        !request.headers.get('accept')?.includes('text/html') ||
+        isStaticPath(request.method || 'GET', url)
+          ? 'Not Found'
+          : getErrorHtml(404, 'Not Found');
+      return new Response(notFoundHtml, {
+        status: 404,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Not-Found': url.pathname },
+      });
+    } catch (e: any) {
+      console.error(e);
+      return new Response(isDev ? String(e || 'Error') : 'Internal Server Error', {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Error': 'cloudflare-pages' },
+      });
+    }
+  }
+
+  return onCloudflarePagesFetch;
+}
+
+const uncacheableDirectives = new Set(['private', 'no-store', 'no-cache']);
+
+const isSharedCacheable = (response: Response) => {
+  const cacheControl = response.headers.get('Cache-Control');
+  if (!cacheControl || response.headers.has('Set-Cookie')) {
+    return false;
+  }
+  return !cacheControl.split(',').some((value) => {
+    const directive = value.trim().split('=', 1)[0].toLowerCase();
+    return uncacheableDirectives.has(directive);
+  });
+};
+
+/**
+ * @deprecated Use `createQwikRouter` instead. Will be removed in V3
+ * @public
+ */
+export const createQwikCity = createQwikRouter;
+
+/** @public */
+export interface QwikRouterCloudflarePagesOptions extends ServerRenderOptions {
+  /** Maximum request body size in bytes. Defaults to 10 MiB. */
+  requestBodyLimit?: number;
+}
+
+/**
+ * @deprecated Use `QwikRouterCloudflarePagesOptions` instead. Will be removed in V3
+ * @public
+ */
+export type QwikCityCloudflarePagesOptions = QwikRouterCloudflarePagesOptions;
+
+/** @public */
+export interface PlatformCloudflarePages {
+  request: Request;
+  env?: Record<string, any>;
+  ctx: { waitUntil: (promise: Promise<any>) => void };
+}

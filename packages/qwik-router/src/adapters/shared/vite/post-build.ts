@@ -1,0 +1,118 @@
+import fs from 'node:fs';
+import { join } from 'node:path';
+import { LOADER_REGEX } from '../../../middleware/request-handler/request-path';
+import { ensureSlash } from '../../../utils/pathname';
+
+/** Cleans the client output SSG results if needed and injects the SSG metadata into the build output */
+export async function postBuild(
+  clientOutDir: string,
+  serverOutDir: string,
+  pathName: string,
+  userStaticPaths: string[],
+  cleanStatic: boolean,
+  noTrailingSlash: boolean
+) {
+  if (pathName && !pathName.endsWith('/')) {
+    pathName = ensureSlash(pathName);
+  }
+  const pathNameBase = pathName || '/';
+  const ignorePathnames = new Set([
+    pathNameBase + (globalThis.__QWIK_BUILD_DIR__ || 'build') + '/',
+    pathNameBase + (globalThis.__QWIK_ASSETS_DIR__ || 'assets') + '/',
+  ]);
+
+  const getStaticPathname = (pathname: string) => {
+    pathname = ensureSlash(pathname);
+    if (noTrailingSlash && pathname !== pathNameBase) {
+      return pathname.slice(0, -1);
+    }
+    return pathname;
+  };
+
+  const staticPaths = new Set(userStaticPaths.map(getStaticPathname));
+
+  const loadItem = async (fsDir: string, fsName: string, pathname: string) => {
+    pathname = ensureSlash(pathname);
+    if (ignorePathnames.has(pathname)) {
+      return;
+    }
+
+    const fsPath = join(fsDir, fsName);
+
+    if (fsName === 'index.html') {
+      // The route pathname already represents this page; clean it if that route is no longer static.
+      if (!staticPaths.has(getStaticPathname(pathname)) && cleanStatic) {
+        await fs.promises.unlink(fsPath);
+      }
+      return;
+    }
+
+    if (LOADER_REGEX.test('/' + fsName)) {
+      // List the exact sidecar SSG wrote so isStaticPath only claims loaders with data on disk.
+      const staticPathname = getStaticPathname(pathname);
+      if (staticPaths.has(staticPathname)) {
+        staticPaths.add(ensureSlash(staticPathname) + fsName);
+      } else if (cleanStatic) {
+        await fs.promises.unlink(fsPath);
+      }
+      return;
+    }
+
+    const stat = await fs.promises.stat(fsPath);
+    if (stat.isDirectory()) {
+      await loadDir(fsPath, ensureSlash(pathname + fsName));
+    } else if (stat.isFile()) {
+      staticPaths.add(pathname + fsName);
+    }
+  };
+
+  const loadDir = async (fsDir: string, pathname: string) => {
+    const itemNames = await fs.promises.readdir(fsDir);
+    await Promise.all(itemNames.map((i) => loadItem(fsDir, i, pathname)));
+  };
+
+  if (fs.existsSync(clientOutDir)) {
+    await loadDir(clientOutDir, pathName);
+  }
+
+  const staticPathsCode = createStaticPathsCode(staticPaths);
+
+  await injectStatics(staticPathsCode, serverOutDir);
+}
+
+function createStaticPathsCode(staticPaths: Set<string>) {
+  // This is the body of the static paths array
+  return JSON.stringify(Array.from(new Set<string>(staticPaths)).sort()).slice(1, -1);
+}
+
+const injectStatics = async (staticPathsCode: string, outDir: string) => {
+  const promises = new Set<Promise<void>>();
+  // replace the static-paths placeholder in the build output with the actual values
+  const doReplace = async (path: string) => {
+    const code = await fs.promises.readFile(path, 'utf-8');
+
+    let replaced = false;
+    const newCode = code.replace(/(['"`])__QWIK_ROUTER_STATIC_PATHS_ARRAY__\1/g, () => {
+      replaced = true;
+      return staticPathsCode;
+    });
+    if (replaced) {
+      await fs.promises.writeFile(path, newCode);
+    }
+  };
+  const walk = async (dir: string) => {
+    const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        await walk(join(dir, entry.name));
+      } else if (entry.name.endsWith('js')) {
+        const p = doReplace(join(dir, entry.name)).finally(() => {
+          promises.delete(p);
+        });
+        promises.add(p);
+      }
+    }
+  };
+  await walk(outDir);
+  await Promise.all(promises);
+};

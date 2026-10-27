@@ -1,0 +1,178 @@
+---
+title: Think Qwik | Concepts
+contributors:
+  - manucorporat
+  - hayley
+  - adamdbradley
+  - literalpie
+  - mhevery
+  - mrhoodz
+  - moinulmoin
+  - maiieul
+updated_at: '2025-05-19T19:43:33Z'
+created_at: '2023-06-19T21:03:04Z'
+---
+
+import { Note } from '~/components/note/note';
+
+# Think Qwik
+If you're coming from another reactive web framework such as Angular, React, Vue, Svelte or Solid, you are already familiar with the core Qwik concepts such as components and reactivity. You can learn more about the Qwik flavor [here](link).
+
+What makes Qwik different is a mechanism we call **javascript streaming**. Compared to the other reactive web frameworks which must execute all and thefore download all of the javascript code present or visible on a page in order to become interactive, Qwik has this unique ability to buffer javascript code bit by bit, prioritize the preloading of user events code and execution, and continuing to preload the rest of the code when idle.
+
+You can think of it like how video streaming compares to downloading. Instead of having to wait for the download to complete before being able press play, users can start running the video most often right away, and they can jump to other parts of the video, which will resume instantly if the packets have already been buffered or only after a short delay if not. Except the difference with javascript streaming is that it's about avoiding executing code, and therefore the associated downloads.
+
+**The result:** TTI (Time To Interactive) is sped up significantly, now a constant O(1) in time instead of growing proportionally to the amount of code present on a page. 
+
+This means:
+  - <u>More scalability</u>: there is theoretically no ceiling where you need to stop building features and start focusing on performance because your app is getting too big and too slow.
+  - <u>Happier developers</u>: no need to learn how to optimize application performance, the framework handles it for you.
+  - <u>Happier users</u>: The vast majority of users will never experience unresponsiveness, regardless of the network or device they're on, and will instead enjoy more features or better interfaces.
+
+## Concretely speaking
+Modern websites require vast amounts of javascript to become interactive.
+
+In a typical Qwik application, TTI normally takes only 3s on 4G and 6s on 3G. It is physically hard to get any faster in such network conditions, accounting for network roundtrip latencies and the time it takes to stream the fully server-side rendered html. Once all of the code has been preloaded, all user interactions are basically instant and you can use Cache Control strategies to speed up future user sessions as well as for offline usage.
+
+On the other hand, TTI in the other reactive web frameworks will most often reach **at least** 6s or more on 4G, and 20s or more on 3G networks. It is not uncommon for bigger apps to reach even 60s or more on 3G. Such delays can easily be noticed by end users. They not only increase bounce rates and reduce conversion rates, but also degrade your brand image.
+
+> In the wild, TTI numbers for the other reactive web frameworks are hard to compare apples to apples as those depend on application size, code splitting, render and other optimization strategies. 
+
+## How does it work?
+
+Historically, reactive web frameworks were designed for CSR (Client Side Rendering). It is only later that they introduced SSR (Server Side Rendering) to show content to the user sooner. 
+
+The way they've achieved this is through a process called hydration, where the server generates and sends the html to the client, and then the client uses javascript to regenerate the tree and attach event listeners for a given page/section to be interactive. 
+
+The problem of this approach is that now the framework still has to execute all of the code for that page/section and therefore must also download all of it.
+
+> There are many strategies to optimize hydration, such as reducing what needs to be hydrated (avoiding the non-interactive parts) and/or hydrating only on a page by page or visible intersection by visible intersection basis. While these strategies can help, they introduce added complexity without fully solving the problem. 
+> <br />
+> When partially hydrating only the above the fold components for example, hydration will have to continue on user scroll or route change, introducing continued perceivable delays during the session lifetime. Another limitation of this approach is that it still needs to hydrate all the interactive components above the fold, which can still take a lot of time if there are many.
+
+Instead, Qwik has been designed with SSR as a first class citizen, supporting [out of order html streaming](link) and relying on the following 5 mechanisms to enable javascript streaming and constant O(1) TTI:
+  - Fine grained Reactivity (a.k.a. signals)
+  - Automatic code splitting (a.k.a. the optimizer)
+  - State serialization (a.k.a. resumability)
+  - Immediate user events registration (a.k.a. the qwikloader)
+  - Buffered and on-demand module preloads (a.k.a. the preloader)
+
+> While Qwik applications do work with pure CSR, SSR is usually the preferred approach. With CSR, any web app (and even Qwik apps) must download the render functions in order to be able to generate the tree, slowing down TTI as the application grows.
+
+### Fine grained Reactivity (a.k.a. signals)
+
+Reactive web frameworks are called reactive because they react on state changes. There are many ways to detect state changes, such as component re-renders, dirty-checking, proxies, observables, and signals. 
+
+Except for React, the industry (Angular, Vue, Svelte and Solid) has converged towards signals as the preferred way to handle reactivity. 
+
+Signals are a push/pull mechanism that only update DOM nodes directly affected by a state change, without the need to re-render an entire sub-tree of components. It is more fine grained, does less work and is therefore faster than the other approaches.
+
+This ability to propagate state changes outside of the component tree structure is key to javascript streaming as it allows preloading and executing only the code necessary for a given user interaction without pulling in parent or child code altogether. 
+
+Without fine-grained reactivity, a user interaction triggering a state change would require re-rendering entire sub-trees of components, which would force downloading and executing a lot of code all at once, introducing delays that would essentially reproduce a form of hydration.
+
+
+### Automatic code splitting and closure extraction (a.k.a. the optimizer)
+
+In order to be able to stream anything, the code must first be split into small packets that can be sent independently. This is one of the core features of the Qwik optimizer. At build time through the `qwikVite` plugin, it analyzes the code and splits it into small chunks, keeping it reactive and attaching metadata to know which bundles are most likely to be requested first. Developers write code as they normally would and the optimizer takes care of the rest.
+
+Under the hood, the optimizer relies on QRLs (Qwik Resource Locators), identified through the `$` signs present in the code to split it into separate segment chunks. 
+
+For example, when you write:
+
+```tsx title="counter.tsx"
+export default component$(() => {
+  const count = useSignal(0);
+
+  useTask$(({ track }) => {
+    track(count);
+    console.log('Count is now', count.value);
+  });
+
+  return <button onClick$={() => count.value++}>{count.value}</button>;
+});
+```
+
+in a .jsx or .tsx file, the optimizer will split the code into 3 separate chunks: one for the component render function itself, one for the click event listener and one for the visible task.
+
+The outputs would look like this:
+
+```tsx title="./app.tsx_app_component_useTask_41mb3rLO0N0.js"
+export const s_41mb3rLO0N0 = ({ track }) => {
+    const count = _capturesObj._[0];
+    track(count);
+    console.log('Count is now', count.value);
+};
+```
+
+```tsx title="./app.tsx_app_component_button_on_click_LToOrb0bX0M.js"
+export const s_LToOrb0bX0M = () => {
+    const count = _capturesObj._[0];
+    count.value++;
+};
+```
+
+```tsx title="component_qrl.tsx"
+const q_s_41mb3rLO0N0 = /*#__PURE__*/ qrl(()=>import("./app.tsx_app_component_useTask_41mb3rLO0N0.js"), "s_41mb3rLO0N0");
+const q_s_LToOrb0bX0M = /*#__PURE__*/ qrl(()=>import("./app.tsx_app_component_button_on_click_LToOrb0bX0M.js"), "s_LToOrb0bX0M");
+//
+export const s_QbmWc3TlyqA = () => {
+    const count = useSignal(0);
+    useTaskQrl(q_s_41mb3rLO0N0.w([
+        count
+    ]));
+    return /*#__PURE__*/ _jsxSorted("button", {
+        "q:p": count
+    }, {
+        "q-e:click": q_s_LToOrb0bX0M
+    }, _wrapProp(count), 7, "ga_0");
+};
+```
+
+And now thanks to fine-grained reactivity, all three QRLs can be preloaded and executed independently of one another.
+
+By default, Qwik tries to avoid having too many bundles. After the `qwikVite` plugin transformations, it then leverages the bundler (Rollup/Rolldown) output options to group back segment chunks that belong together. 
+
+For example here, the `useTask$` will always run when `count.value` changes, so it makes sense to group the `onClick$` and the `useTask$` together in the same output chunk, while the render function can run entirely on its own thanks to fine grained reactivity (and won't even get shipped to the client when it runs during SSR). 
+
+> For the most optimal bundling, the `qwikInsights` plugin can be used to analyze which bundles are used together at runtime.
+
+
+### State Serialization (a.k.a. resumability)
+
+State serialization allows Qwik applications to continue execution where the server left off.
+
+All reactive frameworks need to keep track of application state. The current generation of frameworks does not preserve this information when transitioning from the server to the browser. As a result, the application state must be rebuilt in the browser, duplicating the work that was done on the server.
+
+On the other hand, Qwik serializes listeners, internal data structures, and application state into the HTML during the server-browser handoff. Because all of the information is serialized in the html, the client can just resume execution where the server left off.
+
+Using our counter.tsx example above, Qwik would serialize the click handler, reactive DOM nodes and state as follows:
+
+```html title="counter.html"
+<body>
+  <button q:p="0" :="ga_0" on:click="../handlers-DnDcryhk.js#_run#1">
+    0
+  </button>
+  <!-- ... -->
+  <script type="qwik/state" :>
+    "[30,[0,0,40,[28,[9,"2#3#0",0,10,0,1,10,"5A"],0,":",3,1],40, ...]"
+  </script>
+  <script type="qwik/vnode" :>
+    "#!~{1<5@wQ_0`6^7[8=4}2!~{B`10=9}"
+  </script>
+</body>
+```
+
+When a user clicks on the button, the `on:click` handler would then reach out for the internal `handlers-DnDcryhk.js`'s `_run` function with the given argument (e.g. `1`), wich would in turn parse the `qwik/state` and `qwik/vnode` scripts to know which code to preload and execute. If the code has been preloaded already it will execute right away, otherwise it will be prioritized over other preloads and executed as soon as it is available. 
+
+
+### Immediate User Events Registration (a.k.a. the qwikloader)
+
+The qwikloader is a small script that is responsible for registering user events as soon as possible, even before any other code has been preloaded. This allows keeping track of user interactions until the code gets preloaded, for example incrementing a cart button by 3 if a user clicked on it 3 times.
+
+
+### Buffered and on-demand modulepreloads (a.k.a. the preloader)
+
+To not compete with visual content loading (FCP & LCP), Qwik waits for the browser `load` event before initiating the streaming of javascript bundles. Once the `load` event fires, Qwik starts to buffer `<link rel="modulepreload" href="..." as="script">` tags to speculatively preload the most likely code executed by the user. 
+
+By default a queue of idle preloads is set to a maximum of 25 simultaneous preloads through the [`maxIdlePreloads`](link). Preloads are therefore buffered in a queue of 25 until all bundles have been preloaded. If a user interaction happens during buffering, the preloader will append the corresponding bundles modulepreload link tags, bypassing the idle queue and starting to preload them right away.

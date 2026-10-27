@@ -1,0 +1,511 @@
+@reference "../../global.css";
+
+/* ─── Grid layout: sidebar | content | toc ─── */
+
+.docs-grid {
+  @apply min-h-screen relative;
+
+  @variant xl {
+    @apply grid;
+    grid-template-columns: 287px minmax(0, 1fr);
+  }
+}
+
+.docs-shell {
+  @apply min-w-0 px-4 pb-8 sm:px-6;
+
+  @variant xl {
+    @apply mx-auto grid items-start px-4;
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 733px) 300px;
+    column-gap: 40px;
+    width: fit-content;
+    max-width: 100%;
+  }
+}
+
+.docs-grid > [data-docs-sidebar] {
+  @variant xl {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+
+.docs-main {
+  @apply min-w-0 2xl:pt-16 pt-6;
+
+  @variant xl {
+    @apply order-1 w-full;
+  }
+}
+
+.docs-main-full {
+  @variant xl {
+    max-width: 973px;
+    grid-column: 1 / -1;
+  }
+}
+
+.docs-toc {
+  @apply hidden;
+
+  @variant xl {
+    @apply block order-2 self-start sticky top-0 pt-10;
+  }
+}
+
+.docs-grid > footer {
+  grid-column: 1 / -1;
+
+  @variant xl {
+    @apply order-3;
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+}
+
+.docs .docs-content {
+  @apply min-w-0 w-full;
+}
+
+/* ─── Links ─── */
+
+.docs article a {
+  @apply text-primary-standalone-base underline;
+}
+
+/* ─── Blockquotes ─── */
+
+.docs article blockquote {
+  @apply bg-background-accent py-6 pr-4 pl-2;
+  border-left: 8px solid var(--color-secondary-foreground-base);
+}
+
+.docs article blockquote p:first-child {
+  @apply mt-0;
+}
+
+.docs article blockquote p:last-child {
+  @apply mb-0;
+}
+
+/* ─── Cards ─── */
+
+.docs article .card-grid {
+  @apply flex flex-wrap gap-6;
+}
+
+.docs article .card {
+  @apply bg-background-accent rounded-[10px] min-w-[230px] p-6 flex-1 text-inherit no-underline;
+}
+
+.docs article a.card:hover {
+  @apply outline-2 outline-secondary-foreground-base;
+}
+
+.docs article a.card-intro:hover,
+.docs article a.card-explore:hover {
+  @apply outline-none;
+}
+
+.docs article .card-center {
+  @apply text-center;
+}
+
+.docs article .card h3 {
+  @apply mt-2 mb-0 font-medium text-h6;
+}
+
+.docs article .card p {
+  @apply text-body-xs;
+}
+
+.docs article .card .icon {
+  @apply text-[70px] m-0 leading-none;
+}
+
+.docs article .card .intro-icon {
+  @apply relative mx-auto;
+}
+
+/* ─── Intro cards (two-tone: white icon area + colored text area) ─── */
+
+.docs article .card-intro {
+  @apply p-0 overflow-hidden flex flex-col transition-all;
+  border: 1.6px solid var(--color-border-base);
+  box-shadow: var(--shadow-emphasis);
+}
+
+.docs article .card-intro.card-violet {
+  border-color: var(--color-secondary-border-base);
+  box-shadow: var(--shadow-secondary-base);
+}
+
+.docs article a.card-intro:hover {
+  @apply -translate-y-1;
+}
+
+.docs article .card-intro .card-icon {
+  @apply flex items-center justify-center bg-background-base py-8;
+}
+
+.docs article .card-intro .card-icon .intro-icon {
+  @apply relative mx-auto;
+  width: 56px;
+  height: 56px;
+  color: var(--color-primary-standalone-base);
+}
+
+.docs article .card-intro .card-body {
+  @apply p-5 bg-background-accent;
+}
+
+.docs article .card-intro.card-violet .card-body {
+  @apply bg-secondary-background-base;
+}
+
+.docs article .card-intro .card-body h3 {
+  @apply mt-0 mb-1 font-heading font-semibold text-h6;
+}
+
+.docs article .card-intro .card-body p {
+  @apply text-body-xs mt-0;
+  color: var(--color-standalone-accent);
+}
+
+.docs article .card-intro.card-violet .card-body p {
+  color: var(--color-secondary-foreground-base);
+}
+
+/* ─── Explore cards (horizontal layout) ─── */
+
+.docs article .card-explore {
+  @apply flex flex-row items-stretch gap-0 p-0 overflow-hidden transition-all;
+  border: 1.6px solid var(--color-border-base);
+  box-shadow: var(--shadow-sm-base);
+}
+
+.docs article .card-explore.card-violet {
+  @apply bg-secondary-background-base;
+  border-color: var(--color-secondary-border-base);
+  box-shadow: var(--shadow-secondary-base);
+}
+
+.docs article a.card-explore:hover {
+  @apply -translate-y-1;
+  box-shadow: var(--shadow-sm-accent);
+}
+
+.docs article a.card-explore.card-violet:hover {
+  box-shadow: var(--shadow-secondary-accent);
+}
+
+.docs article .card-explore .card-icon {
+  @apply flex items-center justify-center bg-background-base flex-shrink-0 rounded-l-[10px] p-4;
+}
+
+.docs article .card-explore .card-icon .intro-icon {
+  @apply relative;
+  width: 40px;
+  height: 40px;
+  color: var(--color-primary-standalone-base);
+}
+
+.docs article .card-explore .card-body {
+  @apply flex flex-col justify-center p-5 bg-background-accent;
+}
+
+.docs article .card-explore.card-violet .card-body {
+  @apply bg-secondary-background-base;
+}
+
+.docs article .card-explore h3 {
+  @apply mt-0 mb-0 font-heading font-semibold text-body-sm;
+}
+
+.docs article .card-explore p {
+  @apply text-body-xs mt-0;
+  color: var(--color-standalone-accent);
+}
+
+.docs article .card-explore.card-violet p {
+  color: var(--color-secondary-foreground-base);
+}
+
+/* ─── Feature cards (text only) ─── */
+
+.docs article .card-feature {
+  @apply bg-background-base;
+  border: 1.6px solid var(--color-border-base);
+  box-shadow: var(--shadow-sm-base);
+}
+
+.docs article .card-feature h3 {
+  @apply mt-0 mb-1 font-heading font-semibold text-h6;
+}
+
+.docs article .card-feature p {
+  @apply text-body-xs text-foreground-soft mt-0;
+}
+
+/* ─── Headings ─── */
+
+.docs article h1 {
+  @apply mb-6 relative font-heading text-h4;
+  scroll-margin-top: 80px;
+
+  @variant xl {
+    scroll-margin-top: 160px;
+  }
+}
+
+.docs article h2,
+.docs article h3,
+.docs article h4,
+.docs article h5,
+.docs article h6 {
+  @apply relative font-heading;
+  scroll-margin-top: 80px;
+
+  @variant xl {
+    scroll-margin-top: 160px;
+  }
+  margin-bottom: max(0.7em, 16px);
+}
+
+.docs article h2 {
+  @apply text-h5 mt-16;
+}
+
+.docs article h3 {
+  @apply text-h6 mt-6;
+}
+
+.docs article h4,
+.docs article h5,
+.docs article h6 {
+  @apply text-body-md mt-6;
+}
+
+.docs h2 a,
+.docs h3 a,
+.docs h4 a,
+.docs h5 a,
+.docs h6 a {
+  @apply absolute w-full h-[1em];
+}
+
+.icon-link {
+  @apply hidden;
+}
+
+.icon-link::after {
+  @apply absolute;
+  content: '#';
+  left: -1em;
+}
+
+h2 a:hover .icon,
+h3 a:hover .icon,
+h4 a:hover .icon,
+h5 a:hover .icon,
+h6 a:hover .icon {
+  @apply inline;
+}
+
+/* ─── Vertical rhythm ─── */
+
+.docs article > * + * {
+  @apply mt-6;
+}
+
+/* ─── Body text ─── */
+
+.docs article {
+  @apply wrap-break-word;
+}
+
+.docs article p {
+  @apply text-body-sm text-foreground-base leading-[1.8];
+}
+
+/* ─── Lists ─── */
+
+.docs article ul,
+.docs article ol {
+  @apply pl-6 text-body-sm text-foreground-base leading-[1.8] flex flex-col gap-4;
+  list-style: disc;
+}
+
+.docs article ol {
+  list-style: decimal;
+}
+
+.docs article li {
+  @apply pl-2;
+}
+
+.docs article li > * + * {
+  @apply mt-4;
+}
+
+.docs article li::marker,
+.docs article li::-webkit-details-marker {
+  @apply text-secondary-foreground-base font-extrabold;
+}
+
+.docs article ol li::marker {
+  @apply font-heading font-bold text-label-sm;
+}
+
+/* ─── Code blocks (card style) ─── */
+
+.highlighted-word {
+  @apply bg-secondary-background-base rounded px-[1px] py-[1px] -mx-[1px] -my-[1px];
+}
+
+.highlighted {
+  @apply !bg-secondary-background-accent px-2 -mx-2;
+}
+
+html.dark .docs article .highlighted,
+html[data-theme='dark'] .docs article .highlighted {
+  background-color: color-mix(
+    in srgb,
+    var(--color-secondary-background-accent) 25%,
+    var(--color-background-base)
+  ) !important;
+}
+
+html.dark .docs article .highlighted-word,
+html[data-theme='dark'] .docs article .highlighted-word {
+  background-color: color-mix(
+    in srgb,
+    var(--color-secondary-background-base) 35%,
+    var(--color-background-base)
+  );
+}
+
+/* First highlighted line in a group */
+.highlighted:not(.highlighted + .highlighted) {
+  @apply pt-2 rounded-t;
+}
+
+/* Last highlighted line in a group */
+.highlighted:not(:has(+ .highlighted)) {
+  @apply pb-2 rounded-b;
+}
+
+/* Single highlighted line */
+.highlighted:not(.highlighted + .highlighted):not(:has(+ .highlighted)) {
+  @apply rounded;
+}
+
+.shiki-title {
+  @apply bg-background-accent text-standalone-accent text-body-xs block px-6 py-2;
+  @apply border-[1.6px] border-base border-b-0 rounded-t-2xl;
+  box-shadow: 6px 6px 0 0 var(--color-shadow-base);
+}
+
+.docs article pre {
+  @apply bg-background-base border-[1.6px] border-base rounded-2xl shadow-base overflow-clip py-4 px-6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.docs article pre.shiki,
+.docs article pre.shiki span {
+  color: var(--shiki-light);
+}
+
+html.dark .docs article pre.shiki,
+html.dark .docs article pre.shiki span,
+html[data-theme='dark'] .docs article pre.shiki,
+html[data-theme='dark'] .docs article pre.shiki span {
+  color: var(--shiki-dark);
+}
+
+.docs article .shiki-title + pre {
+  @apply rounded-t-none mt-0;
+}
+
+:root {
+  --code-line-height: 24px;
+}
+
+.docs article pre code {
+  @apply grid bg-transparent border-none select-auto;
+  counter-reset: line;
+  line-height: 1.28;
+}
+
+/* ─── Inline code ─── */
+
+.docs article code {
+  @apply bg-secondary-background-base px-1 py-0.5 rounded text-[0.9em] select-all box-decoration-clone;
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 640px) {
+  .docs article code {
+    @apply break-all;
+  }
+
+  .docs article h1 {
+    @apply text-h5;
+  }
+
+  .docs article h2 {
+    @apply text-h6;
+  }
+}
+
+/* ─── Horizontal Rules ─── */
+
+.docs article hr {
+  border: none;
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+  height: 1.6px;
+  background-color: var(--color-border-base);
+  box-shadow: 4px 4px 0px 0px var(--color-secondary-border-base);
+}
+
+/* ─── Tables ─── */
+
+.docs article .table-wrapper {
+  @apply overflow-x-auto;
+  box-shadow: 6px 6px 0px 0px var(--color-shadow-base, #b2e4ff);
+}
+
+.docs article table {
+  @apply w-full border-collapse;
+}
+
+.docs article th {
+  @apply bg-background-accent border-[1.6px] border-base px-4 py-2.5 text-left;
+  @apply text-label-sm font-bold text-standalone-accent uppercase;
+}
+
+.docs article td {
+  @apply bg-background-base border-[1.6px] border-base px-4 py-2.5 align-top;
+  @apply text-body-sm font-semibold text-foreground-base;
+}
+
+.docs article img {
+  @apply rounded overflow-hidden;
+}
+
+.docs-long-list {
+  @apply flex flex-wrap;
+
+  & ul {
+    @apply contents;
+
+    & li {
+      @apply list-none;
+    }
+  }
+}

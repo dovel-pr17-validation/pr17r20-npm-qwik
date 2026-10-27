@@ -1,0 +1,105 @@
+# @qwik.dev/utils
+
+## 2.0.0-rc.4
+
+### Patch Changes
+
+- Updated dependencies [[`271d87f`](https://github.com/QwikDev/qwik/commit/271d87fd1aac314dbafb330939d4eb763a7a7d79), [`f8ffdf3`](https://github.com/QwikDev/qwik/commit/f8ffdf3ee1a8e96b2481040bafc3f07a2ad05c50), [`399ead2`](https://github.com/QwikDev/qwik/commit/399ead29930f007e68f28e2f23ce112f7e8f0a44), [`de6ea1f`](https://github.com/QwikDev/qwik/commit/de6ea1fcdd99f2d17f70b272bbe64aad61c4ac11), [`b8dd34d`](https://github.com/QwikDev/qwik/commit/b8dd34df3ba6192ea3e47e4276b3bcd6c5c6265f), [`37a7753`](https://github.com/QwikDev/qwik/commit/37a77538283faf8dab102cefe04c553b0b8c11c6), [`6462cc1`](https://github.com/QwikDev/qwik/commit/6462cc19dfab5c5d62d8a1239e6aa036c18bc414), [`4760c63`](https://github.com/QwikDev/qwik/commit/4760c63cf8625c43feea617063c67ca0be1ff2b6), [`9ee6404`](https://github.com/QwikDev/qwik/commit/9ee6404f89f792a0f2520f87ef89970801ccfae3), [`def81f4`](https://github.com/QwikDev/qwik/commit/def81f4f4fc5d4c3887ba138bbc04e7c9fab6395), [`51b7c19`](https://github.com/QwikDev/qwik/commit/51b7c19a18c48fbcc2ed19b76683a8221cd5b234), [`c447c30`](https://github.com/QwikDev/qwik/commit/c447c30823e730a186c46a655c39041f69ead8fd), [`5cecd98`](https://github.com/QwikDev/qwik/commit/5cecd98ee345ac00643199afc98f5db754292fb0), [`200bac0`](https://github.com/QwikDev/qwik/commit/200bac0901c3f00339a7e359906ee2f4b1cb1ff9), [`75454ad`](https://github.com/QwikDev/qwik/commit/75454ad87e23f8b00334350c6fa554e7baf803a3), [`e0ffc00`](https://github.com/QwikDev/qwik/commit/e0ffc0050fad9d7c3b3402d2b14af90d454ff263), [`5fc6a5a`](https://github.com/QwikDev/qwik/commit/5fc6a5a02d5d772948b5a3f6d044d159adcc6bb4), [`2d32d87`](https://github.com/QwikDev/qwik/commit/2d32d87076baa25352e12667bc35519917e1b002), [`6bbbcc2`](https://github.com/QwikDev/qwik/commit/6bbbcc2303b2dce213be1b9d00039284f3e026d5), [`fa14e0e`](https://github.com/QwikDev/qwik/commit/fa14e0e234967480cc39a5b0d2e10220a3e2443c), [`96a3b84`](https://github.com/QwikDev/qwik/commit/96a3b84cb4ab1fc4278b48ae879c2e7089725d0f), [`86d92ab`](https://github.com/QwikDev/qwik/commit/86d92ab74c27a30d9b509e494036c67cf50dfe91), [`42a901d`](https://github.com/QwikDev/qwik/commit/42a901d3667c0b9d96e6e78f6d05e13eee979b50), [`823236a`](https://github.com/QwikDev/qwik/commit/823236afac4ca8cc17466da29c6be5e39c9dd7d0), [`2eac456`](https://github.com/QwikDev/qwik/commit/2eac456c28dc0d19d951f0c4bf5904e65600a544), [`9b7824c`](https://github.com/QwikDev/qwik/commit/9b7824ce03d752bfa14481ae06bd2c37db5e28de)]:
+  - @qwik.dev/core@2.0.0-rc.4
+
+## 2.0.0-rc.3
+
+### Patch Changes
+
+- Updated dependencies [[`1b6a280`](https://github.com/QwikDev/qwik/commit/1b6a280e18c23fa12fad674ed1d97ba0d5c1f8c5), [`b1b6348`](https://github.com/QwikDev/qwik/commit/b1b634884225ab5264da90b620a7429058c39959), [`1520d59`](https://github.com/QwikDev/qwik/commit/1520d594520e084dba41bdb113bf9ef80a6317f4), [`dc8f84e`](https://github.com/QwikDev/qwik/commit/dc8f84e6f646de7c6fc59f97dd28cf622181857c), [`db38699`](https://github.com/QwikDev/qwik/commit/db3869989e9fb9a3e73d837ff5a7b6cb5116ce94), [`4fc6e66`](https://github.com/QwikDev/qwik/commit/4fc6e660a7529be2414eb1298418395e65801dd0)]:
+  - @qwik.dev/core@2.0.0-rc.3
+
+## 2.0.0-rc.2
+
+### Patch Changes
+
+- Updated dependencies [[`9ef4079`](https://github.com/QwikDev/qwik/commit/9ef40794be3ca6d0f7a6001d14b5afa3e69f07c5), [`ea4ebd4`](https://github.com/QwikDev/qwik/commit/ea4ebd4c950513c4104f1dbd2e578847256b9875)]:
+  - @qwik.dev/core@2.0.0-rc.2
+
+## 2.0.0-rc.1
+
+### Patch Changes
+
+- Updated dependencies [[`07babad`](https://github.com/QwikDev/qwik/commit/07babad0ec9d9ba3dc9ef13da3312676380c8331), [`fd5584b`](https://github.com/QwikDev/qwik/commit/fd5584ba52b35825fc261ee040558af9998b7d1f), [`06af6bd`](https://github.com/QwikDev/qwik/commit/06af6bd25eb92943940344da4beacfd06de227c0), [`ccdf03d`](https://github.com/QwikDev/qwik/commit/ccdf03d743051e9e4a370d99b0bb46af5dea8775), [`33a6d7e`](https://github.com/QwikDev/qwik/commit/33a6d7e7f9a8f19b736468bc5150666d38e66f6d), [`3a38a40`](https://github.com/QwikDev/qwik/commit/3a38a4014b49002d9d03751560f3da3a9cd58a8e), [`37c720c`](https://github.com/QwikDev/qwik/commit/37c720cfcbad92117f6e59769f315bcc988da0d3), [`1e4e07f`](https://github.com/QwikDev/qwik/commit/1e4e07f1d3df0bab5f5dc0e303709848d3629c50), [`6e5ec7b`](https://github.com/QwikDev/qwik/commit/6e5ec7bbfc946850ec372ca4feda2716bb8d5daa), [`d001863`](https://github.com/QwikDev/qwik/commit/d001863a168fc0e55099b3619c3cbd3ebab81db5)]:
+  - @qwik.dev/core@2.0.0-rc.1
+
+## 2.0.0-rc.0
+
+### Patch Changes
+
+- Updated dependencies [[`d339e78`](https://github.com/QwikDev/qwik/commit/d339e78cee517b56ab8281c7618a2d2bdc573e5f)]:
+  - @qwik.dev/core@2.0.0-rc.0
+
+## 2.0.0-beta.47
+
+### Patch Changes
+
+- Updated dependencies [[`1fd91de`](https://github.com/QwikDev/qwik/commit/1fd91def81d00453064bd9d3bb97cfb52b85d5f9)]:
+  - @qwik.dev/core@2.0.0-beta.47
+
+## 2.0.0-beta.46
+
+### Patch Changes
+
+- Updated dependencies [[`25f4fe9`](https://github.com/QwikDev/qwik/commit/25f4fe9d490a6e715de73c96e4f22b360c33dda2), [`0a3b5d7`](https://github.com/QwikDev/qwik/commit/0a3b5d7dfaae047ac08cf34cde474879bfda421f), [`5e6675b`](https://github.com/QwikDev/qwik/commit/5e6675bc2446e05ce3c8cf2b5604af5f767f16ac), [`5829032`](https://github.com/QwikDev/qwik/commit/5829032a7db6884f5a1e29af66436c212ca03fdb), [`b61a401`](https://github.com/QwikDev/qwik/commit/b61a401567aace2c265f34e73c34e329e4a385cd), [`cf735fa`](https://github.com/QwikDev/qwik/commit/cf735faef3bed31ea8d816daf2c849091cbf4550), [`d7965d2`](https://github.com/QwikDev/qwik/commit/d7965d20fbcb5bc2b9bd29370c32cecc00ab87d9), [`9568362`](https://github.com/QwikDev/qwik/commit/95683626fe55469ae504fcff45bd09bf3686441b), [`36eb61b`](https://github.com/QwikDev/qwik/commit/36eb61b24bcc98127ba065d37c991df744d403ad), [`7e69829`](https://github.com/QwikDev/qwik/commit/7e69829dd8d388a4806a8fa8b9d2d311eb316475), [`1b7db99`](https://github.com/QwikDev/qwik/commit/1b7db991650132a6e688d91dbc65d8d2aabad9a7), [`1d3ece3`](https://github.com/QwikDev/qwik/commit/1d3ece320eb1b0054fdabacfee3ec188ff36ccaa), [`fa3399e`](https://github.com/QwikDev/qwik/commit/fa3399e04fbe17e4620b0c69b01ec0e2221f6233), [`9a5047d`](https://github.com/QwikDev/qwik/commit/9a5047d4794c607d9aff04f50a19edb2b4985753), [`f7ed58c`](https://github.com/QwikDev/qwik/commit/f7ed58cfcf3710960e99fd058c0bb1103018aee5), [`ec6c309`](https://github.com/QwikDev/qwik/commit/ec6c309bf4e8e08f98d9bb4b955f450e302bdd25), [`0f31f81`](https://github.com/QwikDev/qwik/commit/0f31f816f53c2302cad42cd00f467d49e2c7cbd3), [`dd6c9ab`](https://github.com/QwikDev/qwik/commit/dd6c9ab0d1fb0a0d39bae1f875d61ad62eaa8476), [`303cec7`](https://github.com/QwikDev/qwik/commit/303cec712f049a49d62ad95fdb7410d26d5222d6), [`ac34465`](https://github.com/QwikDev/qwik/commit/ac344657de0cb4787a2d59a1254f91fed8ab8e94)]:
+  - @qwik.dev/core@2.0.0-beta.46
+
+## 2.0.0-beta.45
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @qwik.dev/core@2.0.0-beta.45
+
+## 2.0.0-beta.44
+
+### Patch Changes
+
+- 🛠 build the library packages with the TypeScript optimizer (by [@wmertens](https://github.com/wmertens) in [#9017](https://github.com/QwikDev/qwik/pull/9017))
+
+- Updated dependencies [[`6c54265`](https://github.com/QwikDev/qwik/commit/6c54265e9f9cbe221f89b96c8c250f9944f83552), [`cd3f0e3`](https://github.com/QwikDev/qwik/commit/cd3f0e3db01f07568dc30956d08a15f54c50bd8e), [`98594eb`](https://github.com/QwikDev/qwik/commit/98594eb151908e15823e1c19c71c882a03066bad), [`1be61e9`](https://github.com/QwikDev/qwik/commit/1be61e91c016fd4604908daabba7b3cd5bb34bf5), [`f428c1b`](https://github.com/QwikDev/qwik/commit/f428c1b17613c93db52ce7ae901d3f4c94213346), [`15597bc`](https://github.com/QwikDev/qwik/commit/15597bcdd8ec3b16529059f3cc843f0be68f5909), [`0dda81d`](https://github.com/QwikDev/qwik/commit/0dda81d5e226ce9a3d2790c3b1f053d5fdcd2ef6), [`c91e22f`](https://github.com/QwikDev/qwik/commit/c91e22f782e8b25488b3b239a1f1ff06a7e7dd17), [`4b24e0f`](https://github.com/QwikDev/qwik/commit/4b24e0f4ac74b3959af3cee8ef5c62daa632a42d), [`5c6ad93`](https://github.com/QwikDev/qwik/commit/5c6ad93ca533b388f94cab1970182017da2c9393), [`7288b1c`](https://github.com/QwikDev/qwik/commit/7288b1cdc5c9cba6f2a9b266ddc077740cde8c70), [`32254ce`](https://github.com/QwikDev/qwik/commit/32254cee4c695e7ea2ee387dd1a4f33b5334abbe), [`3a56931`](https://github.com/QwikDev/qwik/commit/3a56931267cdf17d12cdca1483a37189daf6b60e), [`36aa99a`](https://github.com/QwikDev/qwik/commit/36aa99a4707039df890f1060d57a4d8f01c2706e), [`71056a2`](https://github.com/QwikDev/qwik/commit/71056a24ea4308618797d9f98b442affb21dd797), [`b1b7f4c`](https://github.com/QwikDev/qwik/commit/b1b7f4cec3389efda5387703816261a5147ab2c8), [`a8019c2`](https://github.com/QwikDev/qwik/commit/a8019c27433f96777ad8a09abc550f775c477286), [`7039868`](https://github.com/QwikDev/qwik/commit/70398687861064b4b5c3fd05777badfea5494db8), [`a2389c0`](https://github.com/QwikDev/qwik/commit/a2389c028d659e1e4297e10f249c36ce00b36306), [`b293470`](https://github.com/QwikDev/qwik/commit/b2934706a53167320e4d310e8c57575f85a52cd5), [`aa450bb`](https://github.com/QwikDev/qwik/commit/aa450bbc0543f87add499426d7c913c20763134e), [`00f58cb`](https://github.com/QwikDev/qwik/commit/00f58cb106705e436d12406280580ff3de96f3f5), [`e26dd68`](https://github.com/QwikDev/qwik/commit/e26dd68aa26e65f0679dfa06f7bbebaadfebd021), [`db3299b`](https://github.com/QwikDev/qwik/commit/db3299b789764f04780ed6b42a442565be19f3b2), [`e896b74`](https://github.com/QwikDev/qwik/commit/e896b74989ca0c5c806a1e430682405c282b8da0), [`888321b`](https://github.com/QwikDev/qwik/commit/888321b1e2b39e2ebacc7bb6be311ff6cc1a9f13), [`abbce63`](https://github.com/QwikDev/qwik/commit/abbce632fd06b0ecc7d4c67426c7c87bcdae2c82), [`8966a3d`](https://github.com/QwikDev/qwik/commit/8966a3d2e5904ff098184ab3b7343c212251b27c), [`3cd8b63`](https://github.com/QwikDev/qwik/commit/3cd8b6337c996367d991d04476b9ad81f737a836), [`cceadf3`](https://github.com/QwikDev/qwik/commit/cceadf34680763ea6c5efca71dcd5abceff1f572), [`1001564`](https://github.com/QwikDev/qwik/commit/1001564e3d5072b52150cae437bcbdacbca96e3c), [`a913337`](https://github.com/QwikDev/qwik/commit/a913337b080c006ccef570c531bfa9c8a82cdf9e), [`9786577`](https://github.com/QwikDev/qwik/commit/9786577589308edf70ab4d3f0c6aef2e4e21463b), [`2714a6e`](https://github.com/QwikDev/qwik/commit/2714a6e672e547ffd8d63484ab2885b085ad0775), [`3b7b79e`](https://github.com/QwikDev/qwik/commit/3b7b79e7da9026e885c6df572173d568639e20cc), [`7ff2d85`](https://github.com/QwikDev/qwik/commit/7ff2d8523596d4052e389847faf0ed923e74eca2), [`3dfe6f9`](https://github.com/QwikDev/qwik/commit/3dfe6f9fc85a4ac636bbf8a70f173809d3772bb1), [`5593372`](https://github.com/QwikDev/qwik/commit/559337226e87efe98c2642d09e271f3d43c6aa21), [`8816987`](https://github.com/QwikDev/qwik/commit/881698790db8dc20e865600ae22d465aa725b418), [`cb91be2`](https://github.com/QwikDev/qwik/commit/cb91be28581d4e11812fdfdaa2301970d8de3efe), [`d86162d`](https://github.com/QwikDev/qwik/commit/d86162d46b7525351e57bb2f57726ac80df2f069), [`7552514`](https://github.com/QwikDev/qwik/commit/7552514e51395b74bbbddc14bf2e44644beab23d), [`ea3c397`](https://github.com/QwikDev/qwik/commit/ea3c39717119ea100d405d0d75177e33ab8a7d7d), [`0c31699`](https://github.com/QwikDev/qwik/commit/0c31699ab58183c8c1961d3c908ba77559d1f10b), [`e3795ff`](https://github.com/QwikDev/qwik/commit/e3795ff40871545d96b2a2c39aa5b60a254288d5), [`70d6f3d`](https://github.com/QwikDev/qwik/commit/70d6f3d04e1e5ee608b2587e8cf39ec108d5fa11), [`a24ca25`](https://github.com/QwikDev/qwik/commit/a24ca25d4aae218f30fd606d4f24ea5a998a754e), [`6e2764d`](https://github.com/QwikDev/qwik/commit/6e2764d04158d1d3928ea7c55a0cd30b1d65b87a), [`e5d6ecc`](https://github.com/QwikDev/qwik/commit/e5d6ecce5ef96d647104fdbc7f01fafb0b8118aa), [`061e294`](https://github.com/QwikDev/qwik/commit/061e2945d9b84f7eede41411a49ea03de824668b), [`5ade4ec`](https://github.com/QwikDev/qwik/commit/5ade4ecd62cfaae8595fc3a48a253148d457e838), [`596fca1`](https://github.com/QwikDev/qwik/commit/596fca1b7366c923470a10a9b8ad9f7a82fb8625), [`c25867d`](https://github.com/QwikDev/qwik/commit/c25867def4d2a11d84f8497925771789e04ce298), [`50ff284`](https://github.com/QwikDev/qwik/commit/50ff284d22f62a0fb5a67c907e6340a2b49a0e9b)]:
+  - @qwik.dev/core@2.0.0-beta.44
+
+## 2.0.0-beta.43
+
+### Patch Changes
+
+- Updated dependencies [[`7ddca83`](https://github.com/QwikDev/qwik/commit/7ddca83ef78fa1b46ed3d747c1be5515617a3137), [`f2db108`](https://github.com/QwikDev/qwik/commit/f2db108d91938ad604769330ff1ff7466dab6c85), [`aec4012`](https://github.com/QwikDev/qwik/commit/aec401259f1cb44fa21a892281642b4ff5408c00), [`1ecc815`](https://github.com/QwikDev/qwik/commit/1ecc815d368f34056b2c5d3491d31f05b84d18c4)]:
+  - @qwik.dev/core@2.0.0-beta.43
+
+## 2.0.0-beta.42
+
+### Patch Changes
+
+- Updated dependencies [[`e29c4d8`](https://github.com/QwikDev/qwik/commit/e29c4d8476154aa5c0f2282cc4c685436c69fd30), [`2fb7a08`](https://github.com/QwikDev/qwik/commit/2fb7a08d1662c7a5f1a413b6836e741322ab35f7), [`9ccb82a`](https://github.com/QwikDev/qwik/commit/9ccb82a033e552052f5b77d5a36e10e4300b0164), [`50c9666`](https://github.com/QwikDev/qwik/commit/50c9666e28b761fb85060ce0a02ce880a461ee98), [`15de952`](https://github.com/QwikDev/qwik/commit/15de952ee4cd454e2c433df74ff0cfa20bc3ebc6)]:
+  - @qwik.dev/core@2.0.0-beta.42
+
+## 2.0.0-beta.41
+
+### Patch Changes
+
+- Updated dependencies [[`fcced61`](https://github.com/QwikDev/qwik/commit/fcced613a9c0277203b13c2e32a815f02d4ff6cd), [`870529c`](https://github.com/QwikDev/qwik/commit/870529c8194c40fee6a35a5723e0c9171ec5f60d), [`f513eda`](https://github.com/QwikDev/qwik/commit/f513eda07a639399fff044f88607a71670e94d14), [`e4ae649`](https://github.com/QwikDev/qwik/commit/e4ae649364ab3fc7d1fc5f8e98808c5993b4f140)]:
+  - @qwik.dev/core@2.0.0-beta.41
+
+## 2.0.0-beta.40
+
+### Patch Changes
+
+- Updated dependencies [[`7fa1f70`](https://github.com/QwikDev/qwik/commit/7fa1f7060eb3ee0b8841c85a9101d002c7328d92)]:
+  - @qwik.dev/core@2.0.0-beta.40
+
+## 2.0.0-beta.39
+
+### Minor Changes
+
+- ✨ new `@qwik.dev/utils` package with a `usePoll(signal, expires)` hook (by [@wmertens](https://github.com/wmertens) in [#8904](https://github.com/QwikDev/qwik/pull/8904))
+
+### Patch Changes
+
+- Updated dependencies [[`ab4874d`](https://github.com/QwikDev/qwik/commit/ab4874d4cd04ab69bcfd7c79e48f5aa04e6f5542), [`dfe3f66`](https://github.com/QwikDev/qwik/commit/dfe3f66c0fe1477e87390402cee7d77f18241795), [`fc8037b`](https://github.com/QwikDev/qwik/commit/fc8037ba9ce4efbfa3bb769b358f15c9b1ab06b9), [`afbdb6b`](https://github.com/QwikDev/qwik/commit/afbdb6b9c0546d6083bccedcb4f1aaa9055c21f0), [`8d9ac4c`](https://github.com/QwikDev/qwik/commit/8d9ac4cfe5e3ec058cf3aee6f6bd8ba27fffc31d), [`3818442`](https://github.com/QwikDev/qwik/commit/3818442ba7abbae148017af2b267d3b62513bd57), [`cf694e5`](https://github.com/QwikDev/qwik/commit/cf694e5413f897852468b09cbad708ae1436789f), [`cbbfaed`](https://github.com/QwikDev/qwik/commit/cbbfaed0a60c6d4730ad2e1cc9b0a8708c9c6503), [`ce80852`](https://github.com/QwikDev/qwik/commit/ce808523c93e970480bc80916f544f780e1be156), [`e4851c5`](https://github.com/QwikDev/qwik/commit/e4851c5f67bb64330f147719637a51eba2bde630), [`53231e8`](https://github.com/QwikDev/qwik/commit/53231e8cc638346c303c48f0ccb7807a81b09530), [`87e4382`](https://github.com/QwikDev/qwik/commit/87e4382f200aee942600c151811b87375f14c94f), [`10d3b57`](https://github.com/QwikDev/qwik/commit/10d3b57badcdc8c097b21a9ff4d60b02fe8767f7), [`e0b6229`](https://github.com/QwikDev/qwik/commit/e0b62293724db4e9cba2bbcd8c85a5fab5509b8f), [`65661bf`](https://github.com/QwikDev/qwik/commit/65661bf49bcf419c4f8fdd43520b2f8c06dcdd73), [`c31d772`](https://github.com/QwikDev/qwik/commit/c31d772fb6123f5488976f2d574adea988a8c4e0), [`265803d`](https://github.com/QwikDev/qwik/commit/265803d43ec4f7c9ae60f1ebc405fdab5035cd2b)]:
+  - @qwik.dev/core@2.0.0-beta.39

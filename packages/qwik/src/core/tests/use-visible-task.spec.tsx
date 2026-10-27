@@ -1,0 +1,1516 @@
+import {
+  Fragment as Awaited,
+  Fragment as Component,
+  component$,
+  createContextId,
+  Fragment,
+  Fragment as Projection,
+  Fragment as Signal,
+  type Signal as SignalType,
+  Slot,
+  useComputed$,
+  useContext,
+  useContextProvider,
+  useSignal,
+  useStore,
+  useVisibleTask$,
+  useTask$,
+} from '@qwik.dev/core';
+import {
+  createDocument,
+  domRender,
+  getTestPlatform,
+  ssrRenderToDom,
+  trigger,
+  waitForDrain,
+} from '@qwik.dev/core/testing';
+import { render, setPlatform } from '@qwik.dev/core';
+import { _getDomContainer } from '@qwik.dev/core/internal';
+import { describe, expect, it, vi } from 'vitest';
+import { ELEMENT_SEQ } from '../../server/qwik-copy';
+import { ErrorProvider } from '../../testing/rendering.unit-util';
+import { vnode_getProp } from '../client/vnode-utils';
+import { USE_ON_LOCAL } from '../shared/utils/markers';
+import { Task, TaskFlags } from '../use/use-task';
+import type { JSXNodeInternal, JSXOutput } from '../shared/jsx/types/jsx-node';
+
+const debug = false; //true;
+Error.stackTraceLimit = 100;
+
+export function useDelay(value: string) {
+  const ready = useSignal('---');
+  useVisibleTask$(() => {
+    ready.value = value;
+  });
+  return ready;
+}
+
+describe.each([
+  { render: ssrRenderToDom }, //
+  { render: domRender }, //
+])('$render.name: useVisibleTask', ({ render }) => {
+  it('should execute visible task', async () => {
+    const VisibleCmp = component$(() => {
+      const state = useSignal('SSR');
+      useVisibleTask$(() => {
+        state.value = 'CSR';
+      });
+      return <span>{state.value}</span>;
+    });
+
+    const { vNode, document } = await render(<VisibleCmp />, { debug });
+    await trigger(document.body, 'span', 'qvisible');
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <span>
+          <Signal ssr-required>CSR</Signal>
+        </span>
+      </Component>
+    );
+  });
+
+  it.each([false, true])('should execute document-ready task (yield: %s)', async (shouldYield) => {
+    const VisibleCmp = component$(() => {
+      const state = useSignal('SSR');
+      useVisibleTask$(
+        () => {
+          state.value = 'CSR';
+        },
+        {
+          strategy: 'document-ready',
+        }
+      );
+      return <span>{state.value}</span>;
+    });
+
+    const { vNode, document } = await render(<VisibleCmp />, { debug });
+    let now = 0;
+    // Force a yield before the resumed task finishes resolving.
+    const clock = shouldYield
+      ? vi.spyOn(performance, 'now').mockImplementation(() => (now += 20))
+      : undefined;
+    try {
+      await trigger(document.body, 'span', 'd:qinit');
+      await vi.waitFor(() => {
+        expect(vNode).toMatchVDOM(
+          <Component ssr-required>
+            <span>
+              <Signal ssr-required>CSR</Signal>
+            </span>
+          </Component>
+        );
+      });
+    } finally {
+      clock?.mockRestore();
+    }
+  });
+
+  it('should execute visible task with strategy document-idle', async () => {
+    const VisibleCmp = component$(() => {
+      const state = useSignal('SSR');
+      useVisibleTask$(
+        () => {
+          state.value = 'CSR';
+        },
+        {
+          strategy: 'document-idle',
+        }
+      );
+      return <span>{state.value}</span>;
+    });
+
+    const { vNode, document } = await render(<VisibleCmp />, { debug });
+    await trigger(document.body, 'span', 'd:qidle');
+
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <span>
+          <Signal ssr-required>CSR</Signal>
+        </span>
+      </Component>
+    );
+  });
+
+  it('should rerun visible task that invalidates its own tracked signal', async () => {
+    const VisibleCmp = component$(() => {
+      const count = useSignal(1);
+      const state = useSignal('no-change');
+      useVisibleTask$(({ track }) => {
+        track(count);
+        if (count.value === 1) {
+          count.value = 2;
+        } else {
+          state.value = 'change';
+        }
+      });
+      return (
+        <span>
+          {count.value}|{state.value}
+        </span>
+      );
+    });
+
+    const { document } = await render(<VisibleCmp />, { debug });
+    await trigger(document.body, 'span', 'qvisible');
+    expect(document.querySelector('span')!.textContent).toBe('2|change');
+  });
+
+  it('should execute async visible task', async () => {
+    (globalThis as any).log = [] as string[];
+    const VisibleCmp = component$(() => {
+      (globalThis as any).log.push('VisibleCmp');
+      const state = useSignal('SSR');
+
+      useVisibleTask$(async () => {
+        (globalThis as any).log.push('task');
+        (globalThis as any).log.push('resolved');
+        state.value = 'CSR';
+      });
+
+      (globalThis as any).log.push('render');
+      return <span>{state.value}</span>;
+    });
+    const { vNode, document } = await render(<VisibleCmp />, { debug });
+    await trigger(document.body, 'span', 'qvisible');
+    await vi.waitFor(() => {
+      expect((globalThis as any).log).toEqual(['VisibleCmp', 'render', 'task', 'resolved']);
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <span>
+            <Signal ssr-required>CSR</Signal>
+          </span>
+        </Component>
+      );
+    });
+    (globalThis as any).log = undefined;
+  });
+
+  it('should handle exception', async () => {
+    const error = new Error('HANDLE ME');
+    const VisibleCmp = component$(() => {
+      const state = useSignal('SSR');
+      useVisibleTask$(() => {
+        throw error;
+      });
+      return <span>{state.value}</span>;
+    });
+    const { document } = await render(
+      <ErrorProvider>
+        <VisibleCmp />
+      </ErrorProvider>,
+      { debug }
+    );
+    await trigger(document.body, 'span', 'qvisible');
+    expect(ErrorProvider.error).toBe(render === domRender ? error : null);
+  });
+
+  it('should handle async exception', async () => {
+    const error = new Error('HANDLE ME');
+    const VisibleCmp = component$(() => {
+      const state = useSignal('SSR');
+      useVisibleTask$(async () => {
+        throw error;
+      });
+      return <span>{state.value}</span>;
+    });
+
+    const { document } = await render(
+      <ErrorProvider>
+        <VisibleCmp />
+      </ErrorProvider>,
+      { debug }
+    );
+    await trigger(document.body, 'span', 'qvisible');
+    if (render === ssrRenderToDom) {
+      expect(ErrorProvider.error).toBe(null);
+      return;
+    }
+
+    await vi.waitFor(() => expect(ErrorProvider.error).toBe(error));
+  });
+
+  it('should run visible tasks in parallel', async () => {
+    const allDone = new Promise<void>((res) => {
+      (globalThis as any).resolveNoNextVisTask = res;
+    });
+
+    const Counter = component$(() => {
+      const log = useSignal('counter\n');
+
+      useVisibleTask$(() => {
+        log.value += 'start\n';
+      });
+      useVisibleTask$(async () => {
+        log.value += '1:start\n';
+        // Make sure to wait longer than the second task
+        await new Promise((res) => setTimeout(res, 50));
+        log.value += '1:done\n';
+        (globalThis as any).resolveNoNextVisTask();
+      });
+
+      useVisibleTask$(async () => {
+        log.value += '2:start\n';
+        await new Promise((res) => setTimeout(res, 10));
+        log.value += '2:done\n';
+      });
+
+      useVisibleTask$(() => {
+        log.value += 'last\n';
+      });
+
+      return <span>{log.value}</span>;
+    });
+
+    const { vNode, document, container } = await render(<Counter />, { debug });
+
+    await trigger(document.body, 'span', 'qvisible');
+    await allDone;
+    await waitForDrain(container);
+
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <span>
+          <Signal ssr-required>
+            {`counter
+          start
+          1:start
+          2:start
+          last
+          2:done
+          1:done
+          `.replace(/\n\s+/g, '\n')}
+          </Signal>
+        </span>
+      </Component>
+    );
+  });
+
+  it('should trigger in empty components', async () => {
+    const Cmp = component$(() => {
+      const signal = useSignal('empty');
+      useVisibleTask$(() => {
+        signal.value = 'run';
+      });
+      return <>{signal.value}</>;
+    });
+    const { vNode, document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <Fragment ssr-required>
+          <Signal ssr-required>{'run'}</Signal>
+        </Fragment>
+        <script hidden></script>
+      </Component>
+    );
+  });
+
+  it('should trigger in empty components returning a list of components', async () => {
+    const Child = component$(() => <span>child</span>);
+    const Cmp = component$(() => {
+      const signal = useSignal('empty');
+      useVisibleTask$(() => {
+        signal.value = 'run';
+      });
+      return [<Child key="1" />, <Child key="2" />, signal.value];
+    });
+    const { document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+    // the placeholder is the anchor for the visible task, so it has to be rendered
+    const anchors = document.querySelectorAll('script[q-d\\:qinit]');
+    expect(anchors.length).toBe(1);
+    if (render === ssrRenderToDom) {
+      // the attribute must hold the qrl itself (chunk#symbol) - an empty one loads nothing
+      expect(anchors[0].getAttribute('q-d:qinit')).toContain('#');
+    }
+    expect(document.body.textContent).toContain('run');
+  });
+
+  it('should trigger in empty components array', async () => {
+    const Cmp = component$(() => {
+      const signal = useSignal('empty');
+      useVisibleTask$(() => {
+        signal.value = 'run';
+      });
+      return [<>{signal.value}</>, <>{signal.value}</>];
+    });
+    const { vNode, document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <Fragment ssr-required>
+          <Signal ssr-required>{'run'}</Signal>
+        </Fragment>
+        <Fragment ssr-required>
+          <Signal ssr-required>{'run'}</Signal>
+        </Fragment>
+        <script hidden></script>
+      </Component>
+    );
+  });
+
+  it('should trigger in full empty component', async () => {
+    const Cmp = component$(() => {
+      const signal = useSignal('empty');
+      useVisibleTask$(() => {
+        signal.value = 'run';
+      });
+      return <></>;
+    });
+    const { vNode, document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <Fragment ssr-required></Fragment>
+        <script hidden></script>
+      </Component>
+    );
+  });
+
+  it('should trigger when returning null', async () => {
+    (globalThis as any).log = [] as string[];
+    const Cmp = component$(() => {
+      useVisibleTask$(() => {
+        (globalThis as any).log.push('task');
+      });
+      return null;
+    });
+    const { vNode, document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+    expect((globalThis as any).log).toEqual(['task']);
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        {''}
+        <script hidden></script>
+      </Component>
+    );
+  });
+
+  it('should trigger when returning undefined', async () => {
+    (globalThis as any).log = [] as string[];
+    const Cmp = component$(() => {
+      useVisibleTask$(() => {
+        (globalThis as any).log.push('task');
+      });
+      return undefined;
+    });
+    const { vNode, document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+    expect((globalThis as any).log).toEqual(['task']);
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        {''}
+        <script hidden></script>
+      </Component>
+    );
+  });
+
+  it('should merge multiple visible tasks when empty', async () => {
+    (globalThis as any).log = [] as string[];
+    const Cmp = component$(() => {
+      useVisibleTask$(
+        () => {
+          (globalThis as any).log.push('task1');
+        },
+        { strategy: 'document-ready' }
+      );
+      useVisibleTask$(() => {
+        (globalThis as any).log.push('task2');
+      });
+      return <></>;
+    });
+    const { document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+    expect((globalThis as any).log).toEqual(['task1', 'task2']);
+  });
+
+  describe(render.name + ': track', () => {
+    it('should rerun on track', async () => {
+      const Counter = component$(() => {
+        const count = useSignal(10);
+        const double = useSignal(0);
+
+        useVisibleTask$(({ track }) => {
+          double.value = 2 * track(() => count.value);
+        });
+        return (
+          <button
+            onClick$={() => {
+              count.value++;
+            }}
+          >
+            {double.value}
+          </button>
+        );
+      });
+
+      const { vNode, document } = await render(<Counter />, { debug });
+      await trigger(document.body, 'button', 'qvisible');
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Signal ssr-required>{'20'}</Signal>
+          </button>
+        </Component>
+      );
+      await trigger(document.body, 'button', 'click');
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Signal ssr-required>{'22'}</Signal>
+          </button>
+        </Component>
+      );
+    });
+
+    it('should track store property', async () => {
+      const Counter = component$(() => {
+        const store = useStore({ count: 1, double: 0 });
+        useVisibleTask$(({ track }) => {
+          const count = track(store, 'count');
+          store.double = 2 * count;
+        });
+        return <button onClick$={() => store.count++}>{store.double}</button>;
+      });
+
+      const { vNode, document } = await render(<Counter />, { debug });
+      await trigger(document.body, 'button', 'qvisible');
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Signal ssr-required>{'2'}</Signal>
+          </button>
+        </Component>
+      );
+      await trigger(document.body, 'button', 'click');
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Signal ssr-required>{'4'}</Signal>
+          </button>
+        </Component>
+      );
+    });
+  });
+
+  it('should add event if only script tag is present', async () => {
+    (globalThis as any).counter = 0;
+    const Cmp = component$(() => {
+      useVisibleTask$(() => {
+        (globalThis as any).counter++;
+      });
+      return <script />;
+    });
+
+    const { document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+
+    expect((globalThis as any).counter).toBe(1);
+
+    (globalThis as any).counter = undefined;
+  });
+
+  it('should add script tag for visible task if only primitive child is present', async () => {
+    (globalThis as any).counter = 0;
+    const Cmp = component$(() => {
+      useVisibleTask$(() => {
+        (globalThis as any).counter++;
+      });
+      return 123;
+    });
+
+    const { document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script[hidden]', 'd:qinit');
+
+    expect((globalThis as any).counter).toBe(1);
+
+    (globalThis as any).counter = undefined;
+  });
+
+  it('should merge events if only script tag is present', async () => {
+    (globalThis as any).counter = 0;
+    const Cmp = component$(() => {
+      useVisibleTask$(() => {
+        (globalThis as any).counter++;
+      });
+      return (
+        <script
+          document:onQInit$={() => {
+            (globalThis as any).counter++;
+          }}
+        />
+      );
+    });
+
+    const { document } = await render(<Cmp />, { debug });
+    await trigger(document.body, 'script', 'd:qinit');
+
+    expect((globalThis as any).counter).toBe(2);
+
+    (globalThis as any).counter = undefined;
+  });
+
+  describe(render.name + ': queue', () => {
+    it('should execute dependant visible tasks', async () => {
+      (globalThis as any).log = [] as string[];
+      const Counter = component$(() => {
+        const store = useStore({ count: 1, double: 0, quadruple: 0 });
+        useVisibleTask$(({ track }) => {
+          (globalThis as any).log.push('quadruple');
+          store.quadruple = track(store, 'double') * 2;
+        });
+        useVisibleTask$(({ track }) => {
+          (globalThis as any).log.push('double');
+          store.double = track(store, 'count') * 2;
+        });
+        (globalThis as any).log.push('Counter');
+        return (
+          <button
+            onClick$={() => {
+              store.count++;
+            }}
+          >
+            {store.count + '/' + store.double + '/' + store.quadruple}
+          </button>
+        );
+      });
+
+      const { vNode, document } = await render(<Counter />, { debug });
+      await trigger(document.body, 'button', 'qvisible');
+      expect((globalThis as any).log).toEqual([
+        'Counter',
+        'quadruple',
+        'double',
+        'quadruple',
+        // not called with the optimizer
+        // 'Counter',
+      ]);
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Signal ssr-required>{'1/2/4'}</Signal>
+          </button>
+        </Component>
+      );
+      (globalThis as any).log = [];
+      await trigger(document.body, 'button', 'click');
+      expect((globalThis as any).log).toEqual([
+        'double',
+        'quadruple',
+        // not called with the optimizer
+        // 'Counter',
+      ]);
+      expect(vNode).toMatchVDOM(
+        <Component>
+          <button>
+            <Signal ssr-required>2/4/8</Signal>
+          </button>
+        </Component>
+      );
+      (globalThis as any).log = [];
+    });
+  });
+
+  describe(render.name + ': cleanup', () => {
+    it('should execute cleanup visible task rerun on track', async () => {
+      (globalThis as any).log = [] as string[];
+      const Counter = component$(() => {
+        const count = useSignal(0);
+        useVisibleTask$(({ track }) => {
+          const _count = track(() => count.value);
+          (globalThis as any).log.push('visible task: ' + _count);
+          return () => (globalThis as any).log.push('cleanup: ' + _count);
+        });
+        (globalThis as any).log.push('Counter: ' + count.value);
+        return (
+          <button
+            onClick$={() => {
+              count.value++;
+            }}
+          >
+            {count.value}
+          </button>
+        );
+      });
+
+      const { vNode, document } = await render(<Counter />, { debug });
+      await trigger(document.body, 'button', 'qvisible');
+      expect((globalThis as any).log).toEqual(['Counter: 0', 'visible task: 0']);
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Signal ssr-required>{'0'}</Signal>
+          </button>
+        </Component>
+      );
+      (globalThis as any).log = [];
+      await trigger(document.body, 'button', 'click');
+      // expect(log).toEqual(['cleanup: 0', 'task: 1', 'Counter: 1']);
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Signal ssr-required>{'1'}</Signal>
+          </button>
+        </Component>
+      );
+      (globalThis as any).log = [];
+      await trigger(document.body, 'button', 'click');
+      expect((globalThis as any).log).toEqual(['Counter: 2', 'cleanup: 1', 'visible task: 2']);
+      expect(vNode).toMatchVDOM(
+        <Component>
+          <button>
+            <Signal ssr-required>2</Signal>
+          </button>
+        </Component>
+      );
+      (globalThis as any).log = undefined;
+    });
+
+    it('should run visible task once when invalidated by a signal and a ref it mounts', async () => {
+      (globalThis as any).log = [] as string[];
+      const Cmp = component$(() => {
+        const show = useSignal(false);
+        const el = useSignal<HTMLElement>();
+        useVisibleTask$(({ track }) => {
+          track(show);
+          track(el);
+          (globalThis as any).log.push(`visible task: ${show.value} ${!!el.value}`);
+          return () => (globalThis as any).log.push('cleanup');
+        });
+        return (
+          <>
+            <button onClick$={() => (show.value = !show.value)}>toggle</button>
+            {show.value && <div ref={el}>shown</div>}
+          </>
+        );
+      });
+
+      const { document } = await render(<Cmp />, { debug });
+      await trigger(document.body, 'button', 'qvisible');
+      expect((globalThis as any).log).toEqual(['visible task: false false']);
+      (globalThis as any).log = [];
+      await trigger(document.body, 'button', 'click');
+      expect((globalThis as any).log).toEqual(['cleanup', 'visible task: true true']);
+      (globalThis as any).log = undefined;
+    });
+
+    it('should execute cleanup visible task on unmount', async () => {
+      (globalThis as any).log = [] as string[];
+      const Child = component$(() => {
+        useVisibleTask$(({ cleanup }) => {
+          (globalThis as any).log.push('visible_task:');
+          cleanup(() => (globalThis as any).log.push('cleanup:'));
+        });
+        (globalThis as any).log.push('Child');
+        return <span>Child</span>;
+      });
+      const Parent = component$(() => {
+        const show = useSignal(true);
+        return (
+          <button
+            onClick$={() => {
+              show.value = !show.value;
+            }}
+          >
+            {show.value ? <Child /> : 'click'}
+          </button>
+        );
+      });
+
+      const { vNode, document } = await render(<Parent />, { debug });
+      await trigger(document.body, 'span', 'qvisible');
+      expect((globalThis as any).log).toEqual(['Child', 'visible_task:']);
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>
+            <Component ssr-required>
+              <span>Child</span>
+            </Component>
+          </button>
+        </Component>
+      );
+      (globalThis as any).log = [];
+      await trigger(document.body, 'button', 'click');
+
+      expect((globalThis as any).log).toEqual(['cleanup:']);
+      expect(vNode).toMatchVDOM(
+        <Component>
+          <button>{'click'}</button>
+        </Component>
+      );
+      (globalThis as any).log = [];
+      await trigger(document.body, 'button', 'click');
+      await trigger(document.body, 'span', 'qvisible');
+
+      expect((globalThis as any).log).toEqual(['Child', 'visible_task:']);
+      expect(vNode).toMatchVDOM(
+        <Component>
+          <button>
+            <Component>
+              <span>Child</span>
+            </Component>
+          </button>
+        </Component>
+      );
+      (globalThis as any).log = [];
+      await trigger(document.body, 'button', 'click');
+
+      expect((globalThis as any).log).toEqual(['cleanup:']);
+      expect(vNode).toMatchVDOM(
+        <Component>
+          <button>{'click'}</button>
+        </Component>
+      );
+      (globalThis as any).log = undefined;
+    });
+
+    it('#9203 - should run visible task cleanups for nested components', async () => {
+      (globalThis as any).log = [] as string[];
+      const Grandchild = component$(() => {
+        useVisibleTask$(({ cleanup }) => {
+          (globalThis as any).log.push('Grandchild mounted');
+          cleanup(() => (globalThis as any).log.push('Grandchild cleanup'));
+        });
+        return <p id="grandchild">Grandchild</p>;
+      });
+      const Child = component$(() => {
+        useVisibleTask$(({ cleanup }) => {
+          (globalThis as any).log.push('Child mounted');
+          cleanup(() => (globalThis as any).log.push('Child cleanup'));
+        });
+        return (
+          <div id="child">
+            <p>Child</p>
+            <Grandchild />
+          </div>
+        );
+      });
+      const Parent = component$(() => {
+        const show = useSignal(true);
+        return (
+          <main>
+            <button
+              onClick$={() => {
+                show.value = false;
+              }}
+            >
+              Remove
+            </button>
+            {show.value && <Child />}
+          </main>
+        );
+      });
+
+      try {
+        const { document, container } = await render(<Parent />, { debug });
+        await trigger(document.body, '#child', 'qvisible');
+        await trigger(document.body, '#grandchild', 'qvisible');
+        expect((globalThis as any).log).toEqual(['Child mounted', 'Grandchild mounted']);
+
+        await trigger(document.body, 'button', 'click');
+        await waitForDrain(container);
+        expect(document.querySelectorAll('#child').length).toBe(0);
+        expect((globalThis as any).log).toEqual([
+          'Child mounted',
+          'Grandchild mounted',
+          'Child cleanup',
+          'Grandchild cleanup',
+        ]);
+      } finally {
+        (globalThis as any).log = undefined;
+      }
+    });
+
+    it('should run cleanup with component rerender', async () => {
+      const Child = component$((props: { cleanupCounter: SignalType<number> }) => {
+        useVisibleTask$(({ cleanup }) => {
+          cleanup(() => {
+            props.cleanupCounter.value++;
+          });
+        });
+        return <span></span>;
+      });
+
+      const Cmp = component$(() => {
+        const counter = useSignal<number>(0);
+        const cleanupCounter = useSignal<number>(0);
+        return (
+          <div>
+            <button onClick$={() => counter.value++}></button>
+            <Child key={counter.value} cleanupCounter={cleanupCounter} />
+            {cleanupCounter.value}
+          </div>
+        );
+      });
+
+      const { vNode, container } = await render(<Cmp />, { debug });
+
+      await trigger(container.element, 'span', 'qvisible');
+
+      for (let i = 0; i < 6; i++) {
+        await trigger(container.element, 'button', 'click');
+        await trigger(container.element, 'span', 'qvisible');
+      }
+
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <div>
+            <button></button>
+            <Component ssr-required>
+              <span></span>
+            </Component>
+            <Signal ssr-required>{'6'}</Signal>
+          </div>
+        </Component>
+      );
+    });
+
+    it('should handle promises and visible tasks', async () => {
+      const MyComp = component$(() => {
+        const promise = useSignal<Promise<number>>(Promise.resolve(0));
+
+        useVisibleTask$(() => {
+          promise.value = promise.value.then(() => Promise.resolve()).then(() => 1);
+        });
+
+        useVisibleTask$(() => {
+          promise.value = promise.value.then(() => 2);
+        });
+
+        return <p>Should have a number: "{promise.value}"</p>;
+      });
+      const { vNode, document } = await render(<MyComp />, { debug });
+      await trigger(document.body, 'p', 'qvisible');
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <p>
+            Should have a number: "
+            <Signal ssr-required>
+              <Awaited ssr-required>{'2'}</Awaited>
+            </Signal>
+            "
+          </p>
+        </Component>
+      );
+    });
+  });
+
+  it('should not run visible task after SSR until visible again', async () => {
+    const MyComp = component$(() => {
+      const log = useStore<string[]>([]);
+      const update = useSignal(0);
+      useTask$(({ track }) => {
+        track(update);
+        log.push(`task 1`);
+      });
+      useVisibleTask$(async () => {
+        log.push(`visible task`);
+      });
+      useTask$(({ track }) => {
+        track(update);
+        log.push(`task 2`);
+      });
+
+      return <button onClick$={() => update.value++}>{log.join(' | ')}</button>;
+    });
+    const { vNode, document } = await render(<MyComp />, { debug });
+
+    if (render === ssrRenderToDom) {
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>task 1 | task 2</button>
+        </Component>
+      );
+
+      await trigger(document.body, 'button', 'click');
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>task 1 | task 2 | task 1 | task 2</button>
+        </Component>
+      );
+    } else {
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>task 1 | task 2</button>
+        </Component>
+      );
+      await trigger(document.body, 'button', 'qvisible');
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <button>task 1 | task 2 | visible task</button>
+        </Component>
+      );
+    }
+  });
+
+  it('should not add useOn props as slot name', async () => {
+    const InnerCmp = component$(() => {
+      return <div></div>;
+    });
+
+    const Cmp = component$(() => {
+      useVisibleTask$(() => {});
+      return (
+        <div>
+          <Slot />
+        </div>
+      );
+    });
+
+    const Parent = component$(() => {
+      const show = useSignal(false);
+      return (
+        <>
+          <button onClick$={() => (show.value = true)}></button>
+          <Cmp>{show.value && <InnerCmp />}</Cmp>
+        </>
+      );
+    });
+
+    const { vNode, container } = await render(<Parent />, { debug });
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <Fragment ssr-required>
+          <button></button>
+          <Component ssr-required>
+            <div>
+              <Projection ssr-required>{render === ssrRenderToDom ? '' : null}</Projection>
+            </div>
+          </Component>
+        </Fragment>
+      </Component>
+    );
+    await trigger(container.document.body, 'button', 'click');
+    expect(vNode).toMatchVDOM(
+      <Component ssr-required>
+        <Fragment ssr-required>
+          <button></button>
+          <Component ssr-required>
+            <div>
+              <Projection ssr-required>
+                <Component ssr-required>
+                  <div></div>
+                </Component>
+              </Projection>
+            </div>
+          </Component>
+        </Fragment>
+      </Component>
+    );
+  });
+
+  it('should run the visible task only once even when qvisible fires again', async () => {
+    (globalThis as any).visibleTaskRunCounter = 0;
+    const VisibleCmp = component$(() => {
+      useVisibleTask$(() => {
+        (globalThis as any).visibleTaskRunCounter++;
+      });
+      return <span>test</span>;
+    });
+
+    const { container } = await render(<VisibleCmp />, { debug });
+    const span = container.element.querySelector('span');
+    expect(span?.hasAttribute('q-e:qvisible')).toBe(true);
+    await trigger(container.element, 'span', 'qvisible');
+    await trigger(container.element, 'span', 'qvisible');
+    expect((globalThis as any).visibleTaskRunCounter).toBe(1);
+    (globalThis as any).visibleTaskRunCounter = undefined;
+  });
+
+  describe('regression', () => {
+    it('should not re-create the root child component on re-render', async () => {
+      (globalThis as any).childRenderCounter = 0;
+      (globalThis as any).childInstanceCounter = 0;
+      const Child = component$<{ text: string }>((props) => {
+        (globalThis as any).childRenderCounter++;
+        useTask$(() => {
+          // no `track()`, so this runs once per instance
+          (globalThis as any).childInstanceCounter++;
+        });
+        return <span>{props.text}</span>;
+      });
+
+      const Cmp = component$(() => {
+        const isLoaded = useSignal(false);
+        useVisibleTask$(() => {
+          isLoaded.value = true;
+        });
+        const text = `v${isLoaded.value}`;
+        return <Child text={text} />;
+      });
+
+      const { document } = await render(<Cmp />, { debug });
+      const spanBeforeRerender = document.querySelector('span');
+      await trigger(document.body, 'script', 'd:qinit');
+
+      expect(document.querySelector('span')?.textContent).toBe('vtrue');
+      expect((globalThis as any).childRenderCounter).toBe(1);
+      expect((globalThis as any).childInstanceCounter).toBe(1);
+      // the same dom node, not a rebuilt one (only observable after a resume, because a client only
+      // render has already re-rendered by the time it returns)
+      expect(document.querySelector('span')).toBe(spanBeforeRerender);
+      (globalThis as any).childRenderCounter = undefined;
+      (globalThis as any).childInstanceCounter = undefined;
+    });
+
+    it('should not re-create the root child when output changes from child to array', async () => {
+      (globalThis as any).childRenderCounter = 0;
+      (globalThis as any).childInstanceCounter = 0;
+      const Child = component$<{ text: string }>((props) => {
+        (globalThis as any).childRenderCounter++;
+        useTask$(() => {
+          (globalThis as any).childInstanceCounter++;
+        });
+        return <span>{props.text}</span>;
+      });
+
+      const Cmp = component$(() => {
+        const isLoaded = useSignal(false);
+        useVisibleTask$(() => {
+          isLoaded.value = true;
+        });
+        const text = `v${isLoaded.value}`;
+        const child = <Child text={text} />;
+        return isLoaded.value ? [child] : child;
+      });
+
+      const { document } = await render(<Cmp />, { debug });
+      const spanBeforeRerender = document.querySelector('span');
+      await trigger(document.body, 'script', 'd:qinit');
+
+      expect(document.querySelector('span')?.textContent).toBe('vtrue');
+      expect((globalThis as any).childRenderCounter).toBe(1);
+      expect((globalThis as any).childInstanceCounter).toBe(1);
+      expect(document.querySelector('span')).toBe(spanBeforeRerender);
+      (globalThis as any).childRenderCounter = undefined;
+      (globalThis as any).childInstanceCounter = undefined;
+    });
+
+    it('should not modify a jsx node which the component returns', async () => {
+      const shared = (<Fragment key="shared">shared</Fragment>) as JSXNodeInternal;
+
+      const WithTask = component$(() => {
+        useVisibleTask$(() => {});
+        return shared as JSXOutput;
+      });
+      // returns the same node, but registers nothing of its own
+      const NoHooks = component$(() => shared as JSXOutput);
+
+      const Cmp = component$(() => (
+        <div>
+          <WithTask />
+          <NoHooks />
+        </div>
+      ));
+
+      const { vNode, document } = await render(<Cmp />, { debug });
+      await trigger(document.body, 'script', 'd:qinit');
+
+      // the returned node stays untouched
+      expect(shared.children).toBe('shared');
+      expect(document.querySelectorAll('script[q-d\\:qinit]').length).toBe(1);
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <div>
+            <Component ssr-required>
+              <Fragment ssr-required>{'shared'}</Fragment>
+              <script hidden></script>
+            </Component>
+            <Component ssr-required>
+              <Fragment ssr-required>{'shared'}</Fragment>
+            </Component>
+          </div>
+        </Component>
+      );
+    });
+
+    it('should keep every headless component instance when the list is reordered', async () => {
+      (globalThis as any).childRenderCounter = 0;
+      (globalThis as any).childInstanceCounter = 0;
+      const Child = component$<{ label: string }>((props) => {
+        (globalThis as any).childRenderCounter++;
+        useTask$(() => {
+          (globalThis as any).childInstanceCounter++;
+        });
+        return <span>{props.label}</span>;
+      });
+
+      const Headless = component$<{ name: string; index: number }>((props) => {
+        useVisibleTask$(() => {});
+        return <Child label={`${props.name}${props.index}`} />;
+      });
+
+      const Cmp = component$(() => {
+        const names = useSignal(['a', 'b', 'c']);
+        return (
+          <div>
+            <button onClick$={() => (names.value = [...names.value].reverse())}>reverse</button>
+            {names.value.map((name, index) => (
+              <Headless key={name} name={name} index={index} />
+            ))}
+          </div>
+        );
+      });
+
+      const { document } = await render(<Cmp />, { debug });
+      await trigger(document.body, 'script', 'd:qinit');
+      const spansBeforeReorder = Array.from(document.querySelectorAll('span'));
+      expect(spansBeforeReorder.map((span) => span.textContent)).toEqual(['a0', 'b1', 'c2']);
+      expect((globalThis as any).childRenderCounter).toBe(3);
+      expect((globalThis as any).childInstanceCounter).toBe(3);
+
+      await trigger(document.body, 'button', 'click');
+
+      const spansAfterReorder = Array.from(document.querySelectorAll('span'));
+      expect(spansAfterReorder.map((span) => span.textContent)).toEqual(['c0', 'b1', 'a2']);
+      expect(spansAfterReorder[0]).toBe(spansBeforeReorder[2]);
+      expect(spansAfterReorder[1]).toBe(spansBeforeReorder[1]);
+      expect(spansAfterReorder[2]).toBe(spansBeforeReorder[0]);
+      expect((globalThis as any).childRenderCounter).toBe(3);
+      expect((globalThis as any).childInstanceCounter).toBe(3);
+      // one placeholder per instance, they do not share or steal each other's
+      expect(document.querySelectorAll('script[q-d\\:qinit]').length).toBe(3);
+      (globalThis as any).childRenderCounter = undefined;
+      (globalThis as any).childInstanceCounter = undefined;
+    });
+
+    it('should not double-register events on component re-render', async () => {
+      const Cmp = component$(() => {
+        const count = useSignal(0);
+
+        useVisibleTask$(() => {});
+        // component rerender
+        count.value;
+
+        return (
+          <div>
+            <button onClick$={() => count.value++}>Click</button>
+          </div>
+        );
+      });
+
+      const { document, vNode, container } = await render(<Cmp />, { debug });
+
+      await trigger(document.body, 'div', 'qvisible');
+      const seq = vnode_getProp<any[]>(vNode!, ELEMENT_SEQ, container.$getObjectById$)!;
+      const task = seq.find((task) => task instanceof Task)!;
+      expect((task.$flags$ & TaskFlags.EVENTS_REGISTERED) === TaskFlags.EVENTS_REGISTERED).toBe(
+        false
+      );
+      if (render === ssrRenderToDom) {
+        // only on SSR after resuming we have no useOn props
+        expect(vnode_getProp<any>(vNode!, USE_ON_LOCAL, null)).toBeNull();
+      }
+
+      await trigger(document.body, 'button', 'click');
+      expect((task.$flags$ & TaskFlags.EVENTS_REGISTERED) === TaskFlags.EVENTS_REGISTERED).toBe(
+        true
+      );
+      expect(vnode_getProp<any>(vNode!, USE_ON_LOCAL, null)).not.toBeNull();
+    });
+
+    it('#1717 - custom hooks should work', async () => {
+      const Issue1717 = component$(() => {
+        const val1 = useDelay('valueA');
+        const val2 = useDelay('valueB');
+        return (
+          <div>
+            <p>{val1.value}</p>
+            <p>{val2.value}</p>
+          </div>
+        );
+      });
+
+      const { vNode, document } = await render(<Issue1717 />, { debug });
+
+      await trigger(document.body, 'div', 'qvisible');
+
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <div>
+            <p>
+              <Signal ssr-required>{'valueA'}</Signal>
+            </p>
+            <p>
+              <Signal ssr-required>{'valueB'}</Signal>
+            </p>
+          </div>
+        </Component>
+      );
+    });
+
+    it('#4432 - should cleanup child visible task with correct value', async () => {
+      const ContextIssue4432 = createContextId<{ url: URL; logs: string }>('issue-4432');
+
+      const Issue4432Child = component$(() => {
+        const state = useContext(ContextIssue4432);
+
+        const pathname = useComputed$(() => state.url.pathname);
+
+        useVisibleTask$(({ track, cleanup }) => {
+          track(pathname);
+
+          // This should only run on page load for path '/'
+          state.logs += `VisibleTask ChildA ${pathname.value}\n`;
+
+          // This should only run when leaving the page
+          cleanup(() => {
+            state.logs += `Cleanup ChildA ${pathname.value}\n`;
+          });
+        });
+
+        return <p>Child A</p>;
+      });
+
+      const Issue4432 = component$(() => {
+        const loc = useStore({
+          url: new URL('http://localhost:3000/'),
+          logs: '',
+        });
+        useContextProvider(ContextIssue4432, loc);
+
+        return (
+          <>
+            <button
+              onClick$={() => {
+                loc.url = new URL('http://localhost:3000/other');
+              }}
+            >
+              Change
+            </button>
+            <pre>{loc.logs}</pre>
+            {loc.url.pathname === '/' && <Issue4432Child />}
+          </>
+        );
+      });
+
+      const { vNode, document } = await render(<Issue4432 />, { debug });
+
+      await trigger(document.body, 'p', 'qvisible');
+
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <Fragment ssr-required>
+            <button>Change</button>
+            <pre>
+              <Signal ssr-required>{'VisibleTask ChildA /\n'}</Signal>
+            </pre>
+            <Component ssr-required>
+              <p>Child A</p>
+            </Component>
+          </Fragment>
+        </Component>
+      );
+
+      await trigger(document.body, 'button', 'click');
+
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <Fragment ssr-required>
+            <button>Change</button>
+            <pre>
+              <Signal ssr-required>{'VisibleTask ChildA /\nCleanup ChildA /other\n'}</Signal>
+            </pre>
+            {''}
+          </Fragment>
+        </Component>
+      );
+    });
+
+    it('#8309 -should run visible cleanup on unmount', async () => {
+      (globalThis as any).log = [] as string[];
+      const Foo = component$(() => {
+        useVisibleTask$(({ cleanup }) => {
+          (globalThis as any).log.push('entry /foo');
+          cleanup(() => {
+            (globalThis as any).log.push('cleanup /foo');
+          });
+          return () => {
+            (globalThis as any).log.push('return /foo');
+          };
+        });
+
+        return (
+          <div>
+            <p>You are in /foo</p>
+          </div>
+        );
+      });
+
+      const Layout = component$(() => {
+        return <Slot />;
+      });
+
+      const Main = component$(() => {
+        useVisibleTask$(({ cleanup }) => {
+          (globalThis as any).log.push('entry /');
+          cleanup(() => {
+            (globalThis as any).log.push('cleanup /');
+          });
+          return () => {
+            (globalThis as any).log.push('return /');
+          };
+        });
+
+        return (
+          <div>
+            <p>You are in /</p>
+          </div>
+        );
+      });
+
+      const Cmp = component$(() => {
+        const toggle = useSignal(true);
+        return (
+          <div>
+            <h1>Hello from Qwik!</h1>
+            <button
+              onClick$={() => {
+                toggle.value = !toggle.value;
+              }}
+            >
+              toggle
+            </button>
+            {toggle.value ? (
+              <Main />
+            ) : (
+              <Layout>
+                <Foo />
+              </Layout>
+            )}
+          </div>
+        );
+      });
+
+      const { container } = await render(<Cmp />, { debug });
+      await trigger(container.document.body, 'div', 'qvisible');
+      expect((globalThis as any).log).toEqual(['entry /']);
+      await trigger(container.document.body, 'button', 'click');
+      await trigger(container.document.body, 'div', 'qvisible');
+      expect((globalThis as any).log).toEqual(['entry /', 'cleanup /', 'return /', 'entry /foo']);
+      await trigger(container.document.body, 'button', 'click');
+      await trigger(container.document.body, 'div', 'qvisible');
+      expect((globalThis as any).log).toEqual([
+        'entry /',
+        'cleanup /',
+        'return /',
+        'entry /foo',
+        'cleanup /foo',
+        'return /foo',
+        'entry /',
+      ]);
+    });
+  });
+  it('should await returned async cleanup before rerun', async () => {
+    vi.useFakeTimers();
+    try {
+      (globalThis as any).log = [] as string[];
+      const Counter = component$(() => {
+        const count = useSignal(0);
+        useVisibleTask$(({ track }) => {
+          const current = track(count);
+          (globalThis as any).log.push(`task:${current}`);
+          return async () => {
+            (globalThis as any).log.push(`cleanup:${current}:start`);
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            (globalThis as any).log.push(`cleanup:${current}:end`);
+          };
+        });
+        return <button onClick$={() => count.value++}>{count.value}</button>;
+      });
+
+      const { document, container } = await render(<Counter />, { debug });
+      await trigger(document.body, 'button', 'qvisible');
+      await waitForDrain(container);
+      expect((globalThis as any).log).toEqual(['task:0']);
+
+      await trigger(document.body, 'button', 'click');
+      await vi.advanceTimersByTimeAsync(1);
+      expect((globalThis as any).log).toEqual(['task:0', 'cleanup:0:start']);
+      expect((globalThis as any).log).not.toContain('task:1');
+
+      await vi.advanceTimersByTimeAsync(9);
+      expect((globalThis as any).log).toEqual([
+        'task:0',
+        'cleanup:0:start',
+        'cleanup:0:end',
+        'task:1',
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('render() does not wait for visible tasks', () => {
+  it('should resolve render() before a slow visible task completes', async () => {
+    let resolveVisibleTask!: () => void;
+    const visibleTaskDone = new Promise<void>((resolve) => {
+      resolveVisibleTask = resolve;
+    });
+    (globalThis as any).log = [] as string[];
+    try {
+      const Cmp = component$(() => {
+        const state = useSignal('initial');
+        useVisibleTask$(async () => {
+          (globalThis as any).log.push('task-start');
+          await visibleTaskDone;
+          state.value = 'after-task';
+          (globalThis as any).log.push('task-done');
+        });
+        return <span>{state.value}</span>;
+      });
+
+      const { vNode, document } = await domRender(<Cmp />);
+      await trigger(document.body, 'span', 'qvisible', {}, { waitForIdle: false });
+
+      expect((globalThis as any).log).toEqual(['task-start']);
+      expect(vNode).toMatchVDOM(
+        <Component ssr-required>
+          <span>
+            <Signal ssr-required>initial</Signal>
+          </span>
+        </Component>
+      );
+
+      resolveVisibleTask();
+      await vi.waitFor(() => {
+        expect((globalThis as any).log).toContain('task-done');
+        expect(vNode).toMatchVDOM(
+          <Component ssr-required>
+            <span>
+              <Signal ssr-required>after-task</Signal>
+            </span>
+          </Component>
+        );
+      });
+    } finally {
+      resolveVisibleTask();
+      (globalThis as any).log = undefined;
+    }
+  });
+
+  it('cleanup() should still tear down a pending visible task', async () => {
+    (globalThis as any).log = [] as string[];
+    const Cmp = component$(() => {
+      useVisibleTask$(({ cleanup }) => {
+        (globalThis as any).log.push('task');
+        cleanup(() => (globalThis as any).log.push('cleanup'));
+      });
+      return <span>hello</span>;
+    });
+
+    // domRender doesn't expose cleanup; replicate its setup so we can call cleanup ourselves.
+    setPlatform(getTestPlatform());
+    const document = createDocument();
+    const result = await render(document.body, <Cmp />);
+    await trigger(document.body, 'span', 'qvisible');
+    expect((globalThis as any).log).toContain('task');
+    const container = _getDomContainer(document.body);
+    result.cleanup();
+    // Visible-task cleanups are scheduled via CLEANUP chore — wait for the queue to drain.
+    await waitForDrain(container);
+    expect((globalThis as any).log).toContain('cleanup');
+    (globalThis as any).log = undefined;
+  });
+});

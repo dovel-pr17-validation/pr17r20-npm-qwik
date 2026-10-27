@@ -1,0 +1,73 @@
+# @qwik.dev/optimizer
+
+## 2.1.0-rc.10
+
+### Patch Changes
+
+- 🐞🩹 child computeds and tasks now update when a prop expression reads render-local values (by [@rapporian](https://github.com/rapporian) in [#9218](https://github.com/QwikDev/qwik/pull/9218))
+
+- 🐞🩹 keep client-only callbacks outside smart render bundles (by [@Varixo](https://github.com/Varixo) in [#9263](https://github.com/QwikDev/qwik/pull/9263))
+
+## 2.1.0-beta.9
+
+### Patch Changes
+
+- 🐞🩹 preserve nested QRLs captured by library components (by [@Varixo](https://github.com/Varixo) in [#8996](https://github.com/QwikDev/qwik/pull/8996))
+
+- 🐞🩹 duplicate `_defaultValue` const when defaulted props are read in separate QRLs (by [@Varixo](https://github.com/Varixo) in [#9016](https://github.com/QwikDev/qwik/pull/9016))
+
+## 2.1.0-beta.8
+
+### Patch Changes
+
+- 🐞🩹 track props initialized with function call defaults (by [@Varixo](https://github.com/Varixo) in [#8871](https://github.com/QwikDev/qwik/pull/8871))
+
+## 2.1.0-beta.7
+
+### Patch Changes
+
+- 🐞🩹 preserve wrapper context for direct qrl markers (by [@Varixo](https://github.com/Varixo) in [#8924](https://github.com/QwikDev/qwik/pull/8924))
+
+## 2.1.0-beta.6
+
+### Patch Changes
+
+- 🐞🩹 avoid eager container resume for capture-free sibling handlers (by [@Varixo](https://github.com/Varixo) in [#8919](https://github.com/QwikDev/qwik/pull/8919))
+
+## 2.1.0-beta.5
+
+### Patch Changes
+
+- Fix optimizer miscompiling `component$` bodies that destructure props and reassign one of the destructured names (now also handles `for-of` / `for-in` heads); previously caused dev-SSR hangs and runtime ReferenceErrors. Fixes #8638. (by [@46ki75](https://github.com/46ki75) in [#8647](https://github.com/QwikDev/qwik/pull/8647))
+
+## 2.1.0-beta.4
+
+### Minor Changes
+
+- ✨ add worker$ support running heavy work in Web Workers (by [@Varixo](https://github.com/Varixo) in [#8572](https://github.com/QwikDev/qwik/pull/8572))
+
+## 2.1.0-beta.3
+
+### Minor Changes
+
+- ✨ module-scoped `let` identifiers retain `let` when migrating (by [@wmertens](https://github.com/wmertens) in [#8560](https://github.com/QwikDev/qwik/pull/8560))
+
+## 2.1.0-beta.2
+
+### Minor Changes
+
+- ✨ Qwik now supports `passive:eventname` markers for JSX event handlers. Use them with matching `on*$/document:on*$/window:on*$` listeners when you want passive browser listeners for events like `touchstart`, `touchmove`, or `scroll`. (by [@Varixo](https://github.com/Varixo) in [#8523](https://github.com/QwikDev/qwik/pull/8523))
+
+- ✨ The optimizer now supports inline `@qwik-disable-next-line` hints, allowing you to suppress specific diagnostics for the next line when needed, such as `preventdefault-passive-check`. (by [@Varixo](https://github.com/Varixo) in [#8523](https://github.com/QwikDev/qwik/pull/8523))
+
+## 2.0.1-beta.1
+
+### Patch Changes
+
+- 🐞🩹 module-level variables could be moved into extracted qrl chunks even when the main module still needed them (by [@Varixo](https://github.com/Varixo) in [#8500](https://github.com/QwikDev/qwik/pull/8500))
+
+## 2.0.1-beta.0
+
+### Patch Changes
+
+- ✨ the Qwik optimizer is now in a separate package, which reduces download size for the qwik package (by [@wmertens](https://github.com/wmertens) in [#8483](https://github.com/QwikDev/qwik/pull/8483))

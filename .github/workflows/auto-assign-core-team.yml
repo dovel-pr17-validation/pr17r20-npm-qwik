@@ -1,0 +1,75 @@
+name: Auto-assign PRs to core team authors
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, converted_to_draft]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  auto_assign:
+    name: Assign PR author when core team member
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check team membership via REST
+        id: team
+        env:
+          GH_TOKEN: ${{ secrets.QWIK_AUTO_ASSIGN_PR_PAT }}
+          ORG: QwikDev
+          TEAM_SLUG: qwik-team
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          RESPONSE=$(curl -s \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/orgs/${ORG}/teams/${TEAM_SLUG}/memberships/${AUTHOR}")
+
+          STATE=$(echo "$RESPONSE" | jq -r '.state // empty')
+          if [ "$STATE" = "active" ]; then
+            echo "isCore=true" >> $GITHUB_OUTPUT
+          else
+            echo "isCore=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Assign PR to author
+        if: steps.team.outputs.isCore == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.QWIK_AUTO_ASSIGN_PR_PAT }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          AUTHOR=${{ github.event.pull_request.user.login }}
+          curl -s -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -X POST \
+            -d "{\"assignees\":[\"${AUTHOR}\"]}" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/assignees
+
+      - name: Add PR to Qwik Development project
+        id: add-project
+        if: steps.team.outputs.isCore == 'true'
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/QwikDev/projects/1
+          github-token: ${{ secrets.QWIK_AUTO_ASSIGN_PR_PAT }}
+
+      - name: Set status to "In progress" (draft)
+        if: steps.team.outputs.isCore == 'true' && github.event.pull_request.draft == true
+        uses: titoportas/update-project-fields@421a54430b3cdc9eefd8f14f9ce0142ab7678751 # v0.1.0
+        with:
+          project-url: https://github.com/orgs/QwikDev/projects/1
+          github-token: ${{ secrets.QWIK_AUTO_ASSIGN_PR_PAT }}
+          item-id: ${{ steps.add-project.outputs.itemId }}
+          field-keys: Status
+          field-values: In progress
+
+      - name: Set status to "Waiting For Review" (ready)
+        if: steps.team.outputs.isCore == 'true' && github.event.pull_request.draft == false
+        uses: titoportas/update-project-fields@421a54430b3cdc9eefd8f14f9ce0142ab7678751 # v0.1.0
+        with:
+          project-url: https://github.com/orgs/QwikDev/projects/1
+          github-token: ${{ secrets.QWIK_AUTO_ASSIGN_PR_PAT }}
+          item-id: ${{ steps.add-project.outputs.itemId }}
+          field-keys: Status
+          field-values: Waiting For Review

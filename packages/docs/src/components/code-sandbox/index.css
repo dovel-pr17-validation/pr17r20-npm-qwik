@@ -1,0 +1,17 @@
+@reference "../../global.css";
+
+.slot-container {
+  @apply rounded-2xl;
+}
+
+.tabs {
+  @apply flex justify-start items-center border-b border-base;
+}
+
+.tab {
+  @apply p-2 cursor-pointer text-body-xs text-foreground-muted;
+}
+
+.tab.active {
+  @apply rounded-t-lg bg-background-accent border-b-2 border-emphasis text-foreground-base;
+}

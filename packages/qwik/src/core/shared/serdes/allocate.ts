@@ -1,0 +1,272 @@
+import type { DomContainer } from '../../client/dom-container';
+import {
+  ensureMaterialized,
+  vnode_getNode,
+  vnode_isVNode,
+  vnode_locate,
+} from '../../client/vnode-utils';
+import { AsyncSignalImpl } from '../../reactive-primitives/impl/async-signal-impl';
+import { ComputedSignalImpl } from '../../reactive-primitives/impl/computed-signal-impl';
+import { SerializerSignalImpl } from '../../reactive-primitives/impl/serializer-signal-impl';
+import { SignalImpl } from '../../reactive-primitives/impl/signal-impl';
+import { getOrCreateStore } from '../../reactive-primitives/impl/store';
+import { WrappedSignalImpl } from '../../reactive-primitives/impl/wrapped-signal-impl';
+import { SubscriptionData, type NodePropData } from '../../reactive-primitives/subscription-data';
+import { EffectSubscription, StoreFlags } from '../../reactive-primitives/types';
+import { Task, TaskFlags } from '../../use/use-task';
+import { componentQrl } from '../component.public';
+import { qError, QError } from '../error/error';
+import { JSXNodeImpl } from '../jsx/jsx-node';
+import { createPropsProxy } from '../jsx/props-proxy';
+import type { QRLInternal } from '../qrl/qrl-class';
+import { registerSingleton } from '../singletons';
+import type { DeserializeContainer } from '../types';
+import { _UNINITIALIZED } from '../utils/constants';
+import type { ElementVNode } from '../vnode/element-vnode';
+import type { VNode } from '../vnode/vnode';
+import { _constants, BIGINT_PAYLOAD_REGEXP, TypeIds, type Constants } from './constants';
+import { needsInflation } from './deser-proxy';
+import { createQRLWithBackChannel } from './qrl-to-string';
+import { SubscriptionPatch } from './subscription-patch';
+
+export const resolvers = /*#__PURE__*/ registerSingleton(
+  'resolvers',
+  () => new WeakMap<Promise<any>, [Function, Function]>()
+);
+
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const BASE64_REGEXP = /^[A-Za-z0-9+/]*$/;
+// Validate canonical unpadded base64 before its length controls allocation.
+const isCanonicalBase64 = (value: unknown): value is string => {
+  if (typeof value !== 'string' || !BASE64_REGEXP.test(value)) {
+    return false;
+  }
+  const rest = value.length % 4;
+  if (rest === 0) {
+    return true;
+  }
+  if (rest === 1) {
+    return false;
+  }
+  const lastValue = BASE64_ALPHABET.indexOf(value[value.length - 1]);
+  return (lastValue & (rest === 2 ? 15 : 3)) === 0;
+};
+
+export const beginDeserialization = (container: DeserializeContainer): boolean => {
+  const ownsPendingStoreTargets = container.$pendingStoreTargets$ === undefined;
+  container.$pendingStoreTargets$ ??= new Map();
+  return ownsPendingStoreTargets;
+};
+
+export const endDeserialization = (
+  container: DeserializeContainer,
+  ownsPendingStoreTargets: boolean
+): void => {
+  if (ownsPendingStoreTargets) {
+    container.$pendingStoreTargets$!.clear();
+    container.$pendingStoreTargets$ = undefined;
+  }
+};
+
+export const allocate = (container: DeserializeContainer, typeId: number, value: unknown): any => {
+  switch (typeId) {
+    case TypeIds.Plain:
+      return value;
+    case TypeIds.RootRef:
+      return container.$getObjectById$(value as number);
+    case TypeIds.ForwardRef:
+      const rootRef = container.$getForwardRef$(value as number);
+      if (rootRef === -1 || rootRef === undefined) {
+        return _UNINITIALIZED;
+      } else {
+        return container.$getObjectById$(rootRef);
+      }
+    case TypeIds.ForwardRefs:
+      return value;
+    case TypeIds.Constant:
+      return _constants[value as Constants];
+    case TypeIds.Array:
+      return Array((value as any[]).length / 2);
+    case TypeIds.Object:
+      return {};
+    case TypeIds.QRL: {
+      let qrl: QRLInternal;
+      if (typeof value === 'string') {
+        const serializedQrl = value;
+        const firstHash = serializedQrl.indexOf('#');
+        const secondHash = serializedQrl.indexOf('#', firstHash + 1);
+        const chunkRootId = Number(serializedQrl.slice(0, firstHash));
+        const symbolDelta =
+          secondHash === -1
+            ? Number(serializedQrl.slice(firstHash + 1))
+            : Number(serializedQrl.slice(firstHash + 1, secondHash));
+        const symbolRootId = chunkRootId + symbolDelta;
+        const chunk = container.$getObjectById$(chunkRootId) as string;
+        const symbol = container.$getObjectById$(symbolRootId) as string;
+        qrl = createQRLWithBackChannel(
+          chunk,
+          symbol,
+          secondHash !== -1 ? serializedQrl : null,
+          container as DomContainer
+        );
+      } else {
+        // Sync qrl
+        qrl = createQRLWithBackChannel('', String(value), null, container as DomContainer);
+      }
+      return qrl;
+    }
+    case TypeIds.Task:
+      return new Task(-1 as TaskFlags, -1, null!, null!, null);
+    case TypeIds.URL:
+      return new URL(value as string);
+    case TypeIds.Date:
+      return new Date(value as number);
+    case TypeIds.TemporalDuration:
+      return Temporal.Duration.from(value as string);
+    case TypeIds.TemporalInstant:
+      return Temporal.Instant.from(value as string);
+    case TypeIds.TemporalPlainDate:
+      return Temporal.PlainDate.from(value as string);
+    case TypeIds.TemporalPlainDateTime:
+      return Temporal.PlainDateTime.from(value as string);
+    case TypeIds.TemporalPlainMonthDay:
+      return Temporal.PlainMonthDay.from(value as string);
+    case TypeIds.TemporalPlainTime:
+      return Temporal.PlainTime.from(value as string);
+    case TypeIds.TemporalPlainYearMonth:
+      return Temporal.PlainYearMonth.from(value as string);
+    case TypeIds.TemporalZonedDateTime:
+      return Temporal.ZonedDateTime.from(value as string);
+    case TypeIds.Regex:
+      const idx = (value as string).lastIndexOf('/');
+      return new RegExp((value as string).slice(1, idx), (value as string).slice(idx + 1));
+    case TypeIds.Error:
+      return new Error();
+    case TypeIds.Component:
+      return componentQrl(null!);
+    case TypeIds.Signal:
+      return new SignalImpl(container as any, 0);
+    case TypeIds.WrappedSignal:
+      return new WrappedSignalImpl(container as any, null!, null!, null!);
+    case TypeIds.ComputedSignal:
+      return new ComputedSignalImpl(container as any, null!);
+    case TypeIds.AsyncSignal:
+      return new AsyncSignalImpl(container as any, null!, undefined, {});
+    case TypeIds.SerializerSignal:
+      return new SerializerSignalImpl(container as any, null!);
+    case TypeIds.Store: {
+      const data = value as [TypeIds, unknown];
+      // We need to allocate the store first, before we inflate its data, because the data can
+      // reference the store itself (circular)
+      // Note: the actual store data will be inflated in inflate()
+      const t = data[0] as TypeIds;
+      const v = data[1];
+      const storeValue = allocate(container, t, v);
+      const store = getOrCreateStore(storeValue, StoreFlags.NONE, container as DomContainer);
+      if (needsInflation(t)) {
+        container.$pendingStoreTargets$!.set(storeValue, { t, v });
+      }
+      // We must store the reference so it doesn't get deserialized again in inflate()
+      data[0] = TypeIds.Plain;
+      data[1] = storeValue;
+      return store;
+    }
+    case TypeIds.URLSearchParams:
+      return new URLSearchParams(value as string);
+    case TypeIds.FormData:
+      return new FormData();
+    case TypeIds.JSXNode:
+      return new JSXNodeImpl(null!, null, null, null, 0, null);
+    case TypeIds.BigInt:
+      if (typeof value !== 'string' || !BIGINT_PAYLOAD_REGEXP.test(value)) {
+        throw qError(QError.invalidBigIntPayload);
+      }
+      return BigInt(value);
+    case TypeIds.Set:
+      return new Set();
+    case TypeIds.Map:
+      return new Map();
+    case TypeIds.Promise:
+      let resolve!: (value: any) => void;
+      let reject!: (error: any) => void;
+      const promise = new Promise((res, rej) => {
+        resolve = res;
+        reject = rej;
+      });
+      resolvers.set(promise, [resolve, reject]);
+      // Don't leave unhandled promise rejections
+      promise.catch(() => {});
+      return promise;
+    case TypeIds.Uint8Array: {
+      if (!isCanonicalBase64(value)) {
+        throw qError(QError.invalidUint8ArrayPayload);
+      }
+      const encodedLength = value.length;
+      const blocks = Math.floor(encodedLength / 4);
+      const rest = encodedLength % 4;
+      const decodedLength = blocks * 3 + (rest ? rest - 1 : 0);
+      return new Uint8Array(decodedLength);
+    }
+    case TypeIds.PropsProxy:
+      return createPropsProxy(null!);
+    case TypeIds.VNode:
+      return retrieveVNodeOrDocument(container, value);
+    case TypeIds.RefVNode:
+      const vNode = retrieveVNodeOrDocument(container, value);
+      if (vnode_isVNode(vNode)) {
+        /**
+         * If we have a ref, we need to ensure the element is materialized.
+         *
+         * Example:
+         *
+         * ```
+         * const Cmp = component$(() => {
+         *       const element = useSignal<HTMLDivElement>();
+         *
+         *       useVisibleTask$(() => {
+         *         element.value!.innerHTML = 'I am the innerHTML content!';
+         *       });
+         *
+         *       return (
+         *          <div ref={element} />
+         *       );
+         * });
+         * ```
+         *
+         * If we don't materialize early element with ref property, and change element innerHTML it
+         * will be applied to a vnode tree during the lazy materialization, and it is wrong.
+         *
+         * Next if we rerender component it will remove applied innerHTML, because the system thinks
+         * it is a part of the vnode tree.
+         */
+        ensureMaterialized(vNode as ElementVNode);
+        return vnode_getNode(vNode);
+      } else {
+        throw qError(QError.serializeErrorExpectedVNode, [typeof vNode]);
+      }
+    case TypeIds.SubscriptionData:
+      return new SubscriptionData({} as NodePropData);
+    case TypeIds.SubscriptionDataConstTrue:
+      return new SubscriptionData({ $scopedStyleIdPrefix$: null, $isConst$: true });
+    case TypeIds.SubscriptionDataConstFalse:
+      return new SubscriptionData({ $scopedStyleIdPrefix$: null, $isConst$: false });
+    case TypeIds.EffectSubscription:
+    case TypeIds.EffectSubscriptionNoData:
+      return new EffectSubscription(null!, null!, null, null);
+    case TypeIds.SubscriptionPatch:
+      if (__EXPERIMENTAL__.pendingBoundary) {
+        return new SubscriptionPatch();
+      }
+  }
+  throw qError(QError.serializeErrorCannotAllocate, [typeId]);
+};
+export function retrieveVNodeOrDocument(
+  container: DeserializeContainer,
+  value: unknown | null
+): VNode | Document | undefined {
+  return value
+    ? (container as any).rootVNode
+      ? vnode_locate((container as any).rootVNode, value as string)
+      : undefined
+    : container.element?.ownerDocument;
+}

@@ -1,0 +1,227 @@
+/**
+ * Tailwind CSS imports
+ * View the full documentation at https://tailwindcss.com
+ */
+@import 'tailwindcss';
+
+@theme {
+  --color-editorial-paper: #f9f9f9;
+  --color-editorial-white: #ffffff;
+  --color-editorial-ink: #080808;
+  --color-editorial-navy: #1e2230;
+  --color-editorial-blue: #0a6ef9;
+  --color-editorial-blue-soft: #d9e7f7;
+  --color-editorial-violet: #a873fa;
+  --color-editorial-violet-soft: #e8d4fc;
+  --color-editorial-red: #f32b17;
+  --color-editorial-red-soft: #fff0ed;
+  --color-editorial-gray-50: #f7f8f9;
+  --color-editorial-gray-100: #dfe0df;
+  --color-editorial-gray-300: #cdced4;
+  --color-editorial-gray-400: #91949b;
+  --color-editorial-gray-500: #707688;
+  --color-editorial-gray-700: #3c4357;
+  --color-editorial-orange: #f28b0c;
+  --color-editorial-green: #199d4d;
+
+  --color-editorial-canvas: var(--color-editorial-paper);
+  --color-editorial-surface: var(--color-editorial-white);
+  --color-editorial-subtle: var(--color-editorial-gray-50);
+  --color-editorial-selected: var(--color-editorial-blue-soft);
+  --color-editorial-danger-subtle: var(--color-editorial-red-soft);
+  --color-editorial-primary: var(--color-editorial-ink);
+  --color-editorial-secondary: var(--color-editorial-gray-500);
+  --color-editorial-muted: var(--color-editorial-gray-400);
+  --color-editorial-link: var(--color-editorial-blue);
+  --color-editorial-on-accent: var(--color-editorial-white);
+  --color-editorial-border: var(--color-editorial-gray-100);
+  --color-editorial-border-strong: var(--color-editorial-gray-300);
+  --color-editorial-accent: var(--color-editorial-blue);
+  --color-editorial-danger: var(--color-editorial-red);
+  --color-editorial-warning: var(--color-editorial-orange);
+  --color-editorial-success: var(--color-editorial-green);
+  --color-editorial-data-current: var(--color-editorial-blue);
+  --color-editorial-data-previous: var(--color-editorial-violet);
+  --color-editorial-data-band: var(--color-editorial-blue-soft);
+
+  --spacing-editorial-1: 0.25rem;
+  --spacing-editorial-2: 0.5rem;
+  --spacing-editorial-3: 0.75rem;
+  --spacing-editorial-4: 1rem;
+  --spacing-editorial-5: 1.25rem;
+  --spacing-editorial-6: 1.5rem;
+  --spacing-editorial-8: 2rem;
+  --spacing-editorial-10: 2.5rem;
+  --spacing-editorial-11: 2.75rem;
+  --spacing-editorial-12: 3rem;
+  --spacing-editorial-14: 3.5rem;
+  --spacing-editorial-16: 4rem;
+  --spacing-editorial-18: 4.5rem;
+  --spacing-editorial-26: 6.5rem;
+  --spacing-editorial-chart-tall: 13rem;
+  --spacing-editorial-header: 6rem;
+  --spacing-editorial-sidebar-expanded: 16rem;
+
+  --radius-editorial-xs: 0.125rem;
+  --radius-editorial-sm: 0.25rem;
+  --radius-editorial-md: 0.375rem;
+  --radius-editorial-lg: 0.5rem;
+  --radius-editorial-full: 999px;
+
+  --font-editorial-ui: 'Inter', sans-serif;
+  --font-editorial-mono: 'Roboto Mono', monospace;
+  --text-editorial-11: 0.6875rem;
+  --text-editorial-12: 0.75rem;
+  --text-editorial-14: 0.875rem;
+  --text-editorial-16: 1rem;
+  --text-editorial-20: 1.25rem;
+  --text-editorial-24: 1.5rem;
+  --text-editorial-36: 2.25rem;
+  --text-editorial-44: 2.75rem;
+
+  --container-editorial-viewport: 90rem;
+  --container-editorial-auth-visual: 55rem;
+  --container-editorial-auth-panel: 35rem;
+  --container-editorial-auth-control: 24.5rem;
+  --container-editorial-chart: 43.25rem;
+  --container-editorial-form: 32.5rem;
+  --container-editorial-sidebar: 18.5rem;
+  --container-editorial-shell: 80rem;
+  --container-editorial-manifest: 12rem;
+
+  --breakpoint-editorial-desktop: 80rem;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(./fonts/inter-400.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(./fonts/inter-500.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(./fonts/inter-600.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(./fonts/inter-700.ttf) format('truetype');
+}
+
+html,
+body {
+  height: 100%;
+  font-family: var(--font-editorial-ui);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
+}
+
+body {
+  margin: 0;
+  background: var(--color-editorial-canvas);
+}
+
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+  font-weight: 500;
+}
+
+.h1 svg,
+.h2 svg,
+.h3 svg,
+.h4 svg,
+.h5 svg,
+.h6 svg {
+  @apply mr-3;
+}
+
+.h1 {
+  @apply text-4xl;
+  @apply mb-9;
+}
+.h2 {
+  @apply text-3xl;
+  @apply mb-8;
+}
+.h3 {
+  @apply text-2xl;
+  @apply mb-7;
+}
+.h4 {
+  @apply text-xl;
+  @apply mb-3;
+}
+.h5 {
+  @apply text-lg;
+  @apply mb-2.5;
+}
+.h6 {
+  @apply text-base;
+  @apply mb-2;
+}
+
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  form > div {
+    @apply mb-4;
+  }
+
+  label {
+    color: var(--color-editorial-primary);
+    display: block;
+  }
+
+  input {
+    @apply w-full rounded-editorial-sm bg-editorial-surface px-editorial-5 py-editorial-3 text-editorial-primary;
+  }
+}
+
+.button {
+  @apply inline-flex cursor-pointer items-center justify-center;
+}
+
+svg {
+  display: inline-block;
+}
+
+.button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.application-navigation-icon [fill='black'] {
+  fill: currentColor;
+}
+
+.application-navigation-icon [stroke='black'] {
+  stroke: currentColor;
+}

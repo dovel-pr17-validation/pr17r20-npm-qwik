@@ -1,0 +1,66 @@
+---
+title: Basics | Tutorial
+contributors:
+  - adamdbradley
+  - manucorporat
+  - mhevery
+  - saikatdas0790
+  - devagja
+  - avivr
+  - forresst
+  - mrhoodz
+  - iancharlesdouglas
+  - wmertens
+updated_at: '2026-02-10T12:00:00Z'
+created_at: '2022-08-02T12:07:45Z'
+---
+
+For this tutorial, we would like to fetch the list of repositories for a given GitHub organization. To aid you, we have added the `getRepositories()` function to the bottom of the file. Your task is to use the `getRepositories()` function to fetch the list of repositories whenever the user updates the `org` input.
+
+Qwik provides [`useComputed$()`](/docs/(qwik)/core/state/index.mdx) to help you lazily fetch and display data from the server. With an async function it returns a `ComputedSignal<T>` which has these states:
+
+- pending: the data is being fetched from the server => Render a `loading...` indicator with `<Pending>`. Reading `.value` makes rendering wait while data is being fetched.
+- resolved: the data has successfully been fetched from the server => Render the data. `.value` contains the last fetched data or the initial value.
+- errored: the data could not be fetched from the server due to an error => Render the error with `<Catch>`. Reading `.value` re-throws the error.
+
+These states are reactive, meaning that if you use them and they change, your component will automatically re-render to reflect the new state.
+
+Note that reading `.value` triggers the actual loading of the data. So you typically won't have to trigger the load manually.
+
+## Fetching data
+
+Use [`useComputed$()`](/docs/(qwik)/core/state/index.mdx) to set up how the data is fetched from the server.
+
+```jsx
+  const reposResource = useComputed$<string[]>(({ abortSignal }) => {
+    // We need a way to re-run fetching data whenever the `github.org` changes.
+    // Reading githubOrg.value re-runs this function whenever it changes.
+    const org = githubOrg.value;
+
+    // The abortSignal is automatically provided and will be aborted when this
+    // function re-runs, allowing you to cancel pending operations.
+
+    // Fetch the data and return the promises.
+    return getRepositories(org, abortSignal);
+  });
+```
+
+The [`useComputed$()`](/docs/(qwik)/core/state/index.mdx) function returns a `ComputedSignal` object, which is reactive state that can be serialized by Qwik. Qwik automatically tracks every signal and store property the function reads before the first `await`, so it re-runs when they change; reads after an `await` must use the `track()` provided on the context argument. The `abortSignal` allows you to cancel pending operations when the function re-runs. Finally, the async function returns a promise that will resolve to the value.
+
+## Rendering data
+
+Read `.value` in a child component, and wrap it in `<Pending>` for the `pending` state and `<Catch>` for the `rejected` state.
+
+On the server, rendering pauses until the resource is resolved and will always render as either `resolved` or `rejected`. (On the client, all states including `pending` are rendered.)
+
+```jsx
+<Catch fallback$={$((error, reset) => <div>Error: {error.message} <button onClick$={() => reset()}>Retry</button></div>)}>
+  <Pending fallback$={() => <div>Loading...</div>}>
+    <Repos org={githubOrg} repos={reposResource} />
+  </Pending>
+</Catch>
+```
+
+## SSR vs Client
+
+Notice that the same code can render on both server and client (with slightly different behavior, which skips the `pending` state rendering on the server.)

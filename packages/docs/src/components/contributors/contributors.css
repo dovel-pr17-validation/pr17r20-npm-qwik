@@ -1,0 +1,29 @@
+@reference "../../global.css";
+
+/*
+ In a css file because article styles would override / would need important on all.
+*/
+
+.wrapper {
+  @apply my-16 bg-background-base border-[1.6px] border-base rounded-2xl p-6 shadow-[var(--shadow-base)] flex flex-col gap-6;
+}
+
+.wrapper h3 {
+  @apply font-heading text-h6 text-foreground-base m-0;
+}
+
+.wrapper p {
+  @apply text-body-sm text-foreground-base m-0;
+}
+
+.list {
+  @apply flex flex-row flex-wrap gap-3 items-center list-none m-0 p-0;
+}
+
+.contributor {
+  @apply inline-block m-0 p-0;
+}
+
+.avatar {
+  @apply rounded-full size-10 border-[2.4px] border-base object-cover;
+}

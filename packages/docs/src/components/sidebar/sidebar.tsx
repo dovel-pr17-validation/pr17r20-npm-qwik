@@ -1,0 +1,355 @@
+import {
+  component$,
+  createContextId,
+  type Signal,
+  useContext,
+  useContextProvider,
+  useSignal,
+  useVisibleTask$,
+} from '@qwik.dev/core';
+import { Link, useContent, useLocation, type ContentMenu } from '@qwik.dev/router';
+import { lucide, tree } from '@qds.dev/ui';
+import { maxTs, updated } from '@docs-updated';
+import { hideSidebarOnDismissClick } from '../sidebar-overlay/sidebar-overlay';
+
+const SEEN_STORAGE_KEY = 'docs-updated-seen';
+
+/** Compare hrefs ignoring trailing slash so map keys match nav hrefs and the router pathname. */
+const normalizePath = (path: string) => {
+  const trimmed = path.replace(/\/+$/, '');
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+};
+
+/** Doc pages updated since the visitor's last visit and not yet opened. */
+const UpdatedPathsContext = createContextId<Signal<Record<string, true>>>('docs-updated-paths');
+
+export const sidebarId = 'sidebar';
+
+export const Sidebar = component$(() => {
+  const { menu } = useContent();
+  const { url } = useLocation();
+  const desktopCollapsed = useSignal(false);
+
+  const updatedPaths = useSignal<Record<string, true>>({});
+  useContextProvider(UpdatedPathsContext, updatedPaths);
+  // `updated_at` is monotonic, so we store only `{ lastTs, pending }`: pages changed past the last
+  // caught-up timestamp, draining as they're visited. A first-ever visit seeds `lastTs` to a month
+  // ago, so it still flags recently-updated pages.
+  useVisibleTask$(
+    ({ track }) => {
+      const current = normalizePath(track(() => url.pathname));
+      const stored = localStorage.getItem(SEEN_STORAGE_KEY);
+      const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const state: { lastTs: string; pending: string[] } = stored
+        ? JSON.parse(stored)
+        : { lastTs: monthAgo, pending: [] };
+      if (maxTs > state.lastTs) {
+        for (const path in updated) {
+          if (updated[path] > state.lastTs && !state.pending.includes(path)) {
+            state.pending.push(path);
+          }
+        }
+        state.lastTs = maxTs;
+      }
+      const openedIndex = state.pending.indexOf(current);
+      if (openedIndex !== -1) {
+        state.pending.splice(openedIndex, 1);
+      }
+      localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(state));
+      updatedPaths.value = Object.fromEntries(state.pending.map((path) => [path, true]));
+    },
+    { strategy: 'document-idle' }
+  );
+
+  const introSection = menu?.items?.[0];
+  const guidesSections = menu?.items?.slice(1);
+
+  return (
+    <aside
+      id={sidebarId}
+      popover="auto"
+      class="group/sidebar fixed inset-0 z-50 m-0 size-full overflow-hidden border-0 bg-background-base/40 p-0 text-foreground-base opacity-0 backdrop-blur-sm transition-[opacity,display,overlay] transition-discrete duration-300 open:opacity-100 starting:open:opacity-0 xl:sticky xl:top-0 xl:block xl:h-screen xl:w-auto xl:overflow-visible xl:bg-transparent xl:opacity-100 xl:backdrop-blur-none"
+      onClick$={(event, aside) => hideSidebarOnDismissClick(event, aside)}
+    >
+      <button
+        type="button"
+        onClick$={() => (desktopCollapsed.value = false)}
+        aria-label="Open sidebar"
+        aria-hidden={!desktopCollapsed.value}
+        tabIndex={desktopCollapsed.value ? 0 : -1}
+        class="hidden xl:flex absolute top-6 left-4 items-center justify-center p-0"
+      >
+        <lucide.panelleftopen class="vanilla-icon" />
+      </button>
+
+      <nav
+        class={[
+          'absolute inset-y-4 left-4 flex w-[287px] max-w-[calc(100%-2rem)] flex-col gap-4 overflow-y-auto rounded-2xl border-[1.6px] border-base bg-background-base px-4 py-6 shadow-base [scrollbar-gutter:stable] -translate-x-[calc(100%+2rem)] transition-transform duration-300 ease group-open/sidebar:translate-x-0 starting:group-open/sidebar:-translate-x-[calc(100%+2rem)] xl:static xl:h-full xl:max-w-none xl:rounded-none xl:border-0 xl:border-r-[1.6px] xl:shadow-none',
+          desktopCollapsed.value ? 'xl:-translate-x-full' : 'xl:translate-x-0',
+        ]}
+      >
+        {/* Logo + collapse */}
+        <div class="flex items-center justify-between">
+          <Link href="/" aria-label="Qwik Home">
+            <QwikLogomark />
+          </Link>
+          <button
+            type="button"
+            popovertarget={sidebarId}
+            popovertargetaction="hide"
+            onClick$={() => (desktopCollapsed.value = true)}
+            aria-label="Close sidebar"
+            class="flex items-center justify-center p-0"
+          >
+            <lucide.panelleftclose class="vanilla-icon" />
+          </button>
+        </div>
+
+        {/* Sidebar Content */}
+        <tree.root class="flex flex-col gap-6">
+          {introSection && (
+            <div>
+              <div class="font-bold leading-[22px] text-[16px] p-2 text-foreground-base">
+                {introSection.text}
+              </div>
+              <div class="flex flex-col gap-0.5">
+                {introSection.items?.map((item, i) => (
+                  <IntroTreeItem key={i} item={item} pathname={url.pathname} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {guidesSections && guidesSections.length > 0 && (
+            <div>
+              <div class="font-bold leading-[22px] text-[16px] p-2 text-foreground-base">
+                Guides
+              </div>
+              <div class="flex flex-col gap-0.5">
+                {guidesSections.map((section, i) => (
+                  <GuidesTreeNode
+                    key={i}
+                    section={section}
+                    pathname={url.pathname}
+                    sectionIndex={i}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </tree.root>
+      </nav>
+    </aside>
+  );
+});
+
+const UpdatedDot = component$<{ href: string | undefined }>((props) => {
+  const updatedPaths = useContext(UpdatedPathsContext);
+  if (!props.href || !updatedPaths.value[normalizePath(props.href)]) {
+    return null;
+  }
+  return (
+    <span
+      class="ml-auto size-2 shrink-0 rounded-full bg-standalone-accent"
+      title="Updated since your last visit"
+    />
+  );
+});
+
+const IntroTreeItem = component$((props: { item: ContentMenu; pathname: string }) => {
+  const isActive = props.pathname === props.item.href;
+
+  return (
+    <tree.item>
+      <tree.itemlabel class="w-full my-0.5">
+        <Link
+          href={props.item.href}
+          tabIndex={-1}
+          class={[
+            'flex items-center gap-2 p-2 rounded-lg text-[16px] leading-[22px] font-semibold',
+            isActive
+              ? 'bg-background-emphasis text-standalone-emphasis border-[1.6px] border-transparent'
+              : 'text-foreground-muted hover:bg-background-accent hover:text-standalone-accent border-[1.6px] border-transparent',
+          ]}
+        >
+          <IntroItemIcon text={props.item.text} />
+          <span>{props.item.text}</span>
+          <UpdatedDot href={props.item.href} />
+        </Link>
+      </tree.itemlabel>
+    </tree.item>
+  );
+});
+
+const GuidesTreeNode = component$(
+  (props: { section: ContentMenu; pathname: string; sectionIndex: number }) => {
+    const { section, pathname, sectionIndex } = props;
+
+    if (!section.items || section.items.length === 0) {
+      return null;
+    }
+
+    const hasActiveChild = section.items.some(
+      (item) => pathname === item.href || item.items?.some((sub) => pathname === sub.href)
+    );
+    const isOpen = useSignal(sectionIndex === 0 || hasActiveChild);
+
+    return (
+      <tree.item bind:open={isOpen}>
+        <tree.itemtrigger class="group w-full cursor-pointer flex items-center p-2 rounded-lg hover:text-standalone-accent text-foreground-muted justify-between">
+          <span class="flex items-center gap-2 text-[16px] leading-[22px] font-semibold">
+            <GuideSectionIcon name={section.text} />
+            <span>{section.text.replace(' 🧪', '')}</span>
+          </span>
+          <lucide.chevronright
+            ui-open={isOpen.value}
+            class="ui-open:rotate-90 transition-transform duration-200 size-4 shrink-0"
+          />
+        </tree.itemtrigger>
+        <tree.itemcontent class="flex flex-col gap-0.5">
+          {section.items?.map((item, j) => {
+            if (item.items && item.items.length > 0) {
+              return <SubTreeNode key={j} item={item} pathname={pathname} />;
+            }
+            const isActive = pathname === item.href;
+            return (
+              <tree.item key={j}>
+                <tree.itemlabel class="w-full my-0.5">
+                  <Link
+                    href={item.href}
+                    tabIndex={-1}
+                    class={[
+                      'flex items-center gap-2 pl-13 pr-2 py-2 rounded-lg text-[16px] leading-[22px] font-semibold',
+                      isActive
+                        ? 'bg-background-emphasis text-standalone-emphasis border-[1.6px] border-transparent'
+                        : 'text-foreground-muted hover:bg-background-accent hover:text-standalone-accent border-[1.6px] border-transparent',
+                    ]}
+                  >
+                    <span class="truncate">{item.text}</span>
+                    <UpdatedDot href={item.href} />
+                  </Link>
+                </tree.itemlabel>
+              </tree.item>
+            );
+          })}
+        </tree.itemcontent>
+      </tree.item>
+    );
+  }
+);
+
+const SubTreeNode = component$((props: { item: ContentMenu; pathname: string }) => {
+  const { item, pathname } = props;
+  const hasActiveChild = item.items?.some((child) => pathname === child.href);
+  const isOpen = useSignal(hasActiveChild || false);
+
+  return (
+    <tree.item bind:open={isOpen}>
+      <tree.itemtrigger class="w-full cursor-pointer flex items-center pl-6 pr-2 py-2 rounded-lg hover:text-standalone-accent text-foreground-muted justify-between">
+        <span class="flex items-center gap-2 text-[16px] leading-[22px] font-semibold">
+          <SubTreeIcon name={item.text} />
+          <span>{item.text}</span>
+        </span>
+        <span
+          class={['transition-transform duration-200 size-4 shrink-0', isOpen.value && 'rotate-90']}
+        >
+          <lucide.chevronright class="size-4" />
+        </span>
+      </tree.itemtrigger>
+      <tree.itemcontent class="flex flex-col gap-0.5">
+        {item.items?.map((child, k) => {
+          const isActive = pathname === child.href;
+          return (
+            <tree.item key={k}>
+              <tree.itemlabel class="w-full my-0.5">
+                <Link
+                  href={child.href}
+                  tabIndex={-1}
+                  class={[
+                    'flex items-center gap-2 pl-10 pr-2 py-2 rounded-lg text-[16px] leading-[22px] font-semibold',
+                    isActive
+                      ? 'bg-background-emphasis text-standalone-emphasis border-[1.6px] border-transparent'
+                      : 'text-foreground-muted hover:bg-background-accent hover:text-standalone-accent border-[1.6px] border-transparent',
+                  ]}
+                >
+                  <span class="truncate">{child.text}</span>
+                  <UpdatedDot href={child.href} />
+                </Link>
+              </tree.itemlabel>
+            </tree.item>
+          );
+        })}
+      </tree.itemcontent>
+    </tree.item>
+  );
+});
+
+const SubTreeIcon = component$<{ name: string }>((props) => {
+  switch (props.name) {
+    case 'Concepts':
+      return <lucide.lightbulb class="vanilla-icon" />;
+    case 'Advanced':
+      return <lucide.settings class="vanilla-icon" />;
+    default:
+      return null;
+  }
+});
+
+const GuideSectionIcon = component$<{ name: string }>((props) => {
+  switch (props.name) {
+    case 'Foundation':
+      return <lucide.box class="vanilla-icon" />;
+    case 'Router':
+      return <lucide.route class="vanilla-icon" />;
+    case 'Cookbook':
+      return <lucide.chefhat class="vanilla-icon" />;
+    case 'Integrations':
+      return <lucide.puzzle class="vanilla-icon" />;
+    case 'Deployments':
+      return <lucide.rocket class="vanilla-icon" />;
+    case 'Guides':
+      return <lucide.compass class="vanilla-icon" />;
+    case 'Reference':
+      return <lucide.filetext class="vanilla-icon" />;
+    case 'Experimental 🧪':
+      return <lucide.testtubediagonal class="vanilla-icon" />;
+    default:
+      return null;
+  }
+});
+
+const IntroItemIcon = component$<{ text: string }>((props) => {
+  switch (props.text) {
+    case 'Overview':
+      return <lucide.filetext class="vanilla-icon" />;
+    case 'Getting Started':
+      return <lucide.play class="vanilla-icon" />;
+    case 'Project structure':
+      return <lucide.foldertree class="vanilla-icon" />;
+    case 'FAQ':
+      return <lucide.circlequestionmark class="vanilla-icon" />;
+    case 'Upgrade':
+      return <lucide.sparkles class="vanilla-icon" />;
+    default:
+      return null;
+  }
+});
+
+const QwikLogomark = component$(() => {
+  return (
+    <svg width="25" height="27" viewBox="0 0 47 53" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M40.973 52.5351L32.0861 43.6985L31.9503 43.7179V43.621L13.0511 24.9595L17.708 20.4637L14.9721 4.76715L1.99103 20.8513C-0.220992 23.0798 -0.628467 26.7036 0.962635 29.3778L9.07337 42.8265C10.3152 44.9 12.566 46.1402 14.9915 46.1208L19.0081 46.082L40.973 52.5351Z"
+        fill="#18B6F6"
+      />
+      <path
+        d="M45.8232 20.5411L44.038 17.2468L43.1066 15.5609L42.738 14.902L42.6992 14.9408L37.8094 6.47238C36.587 4.34075 34.2974 3.02301 31.8137 3.04239L27.5255 3.15865L14.7384 3.19741C12.313 3.21679 10.101 4.49577 8.87853 6.56927L1.09766 21.9945L15.0101 4.72831L33.2496 24.7656L30.0091 28.0406L31.9495 43.7178L31.9689 43.679V43.7178H31.9301L31.9689 43.7565L33.4824 45.2293L40.8364 52.4187C41.1469 52.7094 41.6514 52.3606 41.4379 51.9924L36.8975 43.0589L44.8142 28.4282L45.0664 28.1375C45.1634 28.0212 45.2604 27.905 45.3381 27.7887C46.8904 25.6764 47.1038 22.8472 45.8232 20.5411Z"
+        fill="#AC7EF4"
+      />
+      <path
+        d="M33.3076 24.6882L15.0099 4.74774L17.61 20.3668L12.9531 24.882L31.9105 43.6985L30.203 28.0794L33.3076 24.6882Z"
+        fill="white"
+      />
+    </svg>
+  );
+});

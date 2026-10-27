@@ -1,0 +1,382 @@
+---
+title: RouteLoader$ | Qwik Router
+contributors:
+  - manucorporat
+  - mhevery
+  - wtlin1228
+  - AnthonyPAlicea
+  - saisrikardumpeti
+  - hamatoyogi
+  - steve8708
+  - iamyuu
+  - n8sabes
+  - mrhoodz
+  - mjschwanitz
+  - adamdbradley
+  - gioboa
+  - Varixo
+  - wmertens
+updated_at: '2026-05-10T00:00:00Z'
+created_at: '2023-03-20T23:45:13Z'
+---
+
+import { Note } from '~/components/note/note';
+
+# `routeLoader$()`
+
+Route Loaders load data on the server so it becomes available inside Qwik Components during rendering. They load on every navigation that hits their route.
+
+```tsx /routeLoader$/ /useProductDetails/#a title="src/routes/product/[productId]/index.tsx"
+import { component$ } from '@qwik.dev/core';
+import { routeLoader$ } from '@qwik.dev/router';
+
+export const useProductDetails = routeLoader$(async ({ params }) => {
+  // Runs only on the server, on this route, on every navigation
+  const res = await fetch(`https://.../products/${params.productId}`);
+  return (await res.json()) as Product;
+});
+
+export default component$(() => {
+  // ComputedSignal<Product> — read .value
+  const product = useProductDetails();
+  return <p>Product name: {product.value.name}</p>;
+});
+```
+
+`routeLoader$()`s must be exported from a `layout.tsx` or `index.tsx` file. To share one across routes, define it in a separate file and [re-export](/docs/(qwikrouter)/re-exporting-loaders/index.mdx) it from each `index.tsx` / `layout.tsx` that needs it.
+
+<Note>Don't use `routeLoader$()` to build a REST API — use [Endpoints](/docs/endpoints/) for that. Loaders are for data your own Qwik Components consume.</Note>
+
+## How it works
+
+A few properties of route loaders:
+
+- **Server-only.** The loader function only runs on the server; the browser never sees the closure body.
+- **Keyed by route, not by call site.** Two visits to the same URL share one logical "result" per "route + url params + search params" set, not one per `useProductDetails()` call.
+- **Result is a `ComputedSignal`.** Components read `.value`. While the data is loading, reading `.value` suspends; if the loader threw, it re-throws the error.
+- **Each loader has its own JSON endpoint.** The client fetches `q-loader-{id}.{hash}.json` for navigation, polling, and post-action invalidation. The browser HTTP cache, ETags, and the `cacheControl` option all apply.
+- **Blocks SSR by default.** The server awaits the loader before rendering the page, so a `throw redirect()` or `throw error()` controls the response. Opt out with `blockSSR: false` to run it in the background — see [Background loaders](#background-loaders-blockssr).
+
+This means a `routeLoader$()` should be a **pure function of the URL**: same `params` and `search` → same response. Mixing in any other input (action state, request bodies, one-shot tokens) makes the cached responses inconsistent — see [Loaders cannot read action state](#loaders-cannot-read-action-state).
+
+## Reading the result in a component
+
+Hooks return a `ComputedSignal<T>`. Read `.value` to get the data. Wrap the component that reads it in [`<Pending>`](/docs/labs/pending/index.mdx) to show a placeholder while it loads, and in [`<Catch>`](/docs/labs/catch/index.mdx) to render a fallback if the loader throws:
+
+```tsx /Pending/ /Catch/ /product.value/#a title="src/routes/product/[productId]/index.tsx"
+import { $, component$, Catch, Pending } from '@qwik.dev/core';
+import { routeLoader$ } from '@qwik.dev/router';
+
+export const useProductDetails = routeLoader$(async ({ params, fail }) => {
+  const product = await db.products.findById(params.productId);
+  if (!product) {
+    return fail(404, { message: 'Product not found' });
+  }
+  return product;
+});
+
+const ProductDetails = component$(() => {
+  const product = useProductDetails();
+  return product.value.failed ? (
+    <div>{product.value.message}</div>
+  ) : (
+    <div>Product name: {product.value.name}</div>
+  );
+});
+
+export default component$(() => (
+  <Catch fallback$={$((error) => <div>Error: {error.message}</div>)}>
+    <Pending fallback$={() => <div>Loading…</div>}>
+      <ProductDetails />
+    </Pending>
+  </Catch>
+));
+```
+
+<Note>While the signal is in error state, accessing `.value` re-throws the error.</Note>
+
+### Signaling failure from a loader
+
+Loaders signal failure two ways:
+
+- **`throw requestEvent.error(status, data)`** — throw a `ServerError` directly. Reading `signal.value` re-throws the `ServerError {status, data}`, so wrap the reader in a `<Catch>`. This is the recommended way to signal failure from a loader.
+- **`return requestEvent.fail(status, data)`** — returns an inline failure. `signal.value.failed` is `true` and `signal.value` contains the rest of the data.
+
+In both cases the result is not cacheable. For a blocking loader (the default) the HTTP response status is also set to `status`; a `blockSSR: false` loader is isolated from the page response — see [Background loaders](#background-loaders-blockssr).
+
+## Multiple `routeLoader$`s
+
+Multiple loaders are allowed in any combination, including in the same file. They execute in parallel — declaring more does not slow rendering down by itself.
+
+```tsx title="src/routes/admin/index.tsx"
+import { component$ } from '@qwik.dev/core';
+import { routeLoader$ } from '@qwik.dev/router';
+
+export const useLoginStatus = routeLoader$(async ({ cookie }) => ({
+  isUserLoggedIn: checkCookie(cookie),
+}));
+
+export const useCurrentUser = routeLoader$(async ({ cookie }) => ({
+  user: currentUserFromCookie(cookie),
+}));
+
+export default component$(() => {
+  const loginStatus = useLoginStatus();
+  const currentUser = useCurrentUser();
+  return (
+    <section>
+      <h1>Admin</h1>
+      {loginStatus.value.isUserLoggedIn ? (
+        <p>Welcome {currentUser.value.user.name}</p>
+      ) : (
+        <p>You are not logged in</p>
+      )}
+    </section>
+  );
+});
+```
+
+## When does the loader re-run?
+
+A loader is re-fetched when:
+
+- the app navigates (every SPA navigation re-fetches every loader except `cacheControl: 'immutable'` ones, which only re-fetch when their URL inputs change; the browser HTTP cache decides whether a fetch hits the network — see [Cache & freshness](#cache--freshness)),
+- it's invalidated by an action (see [`routeAction$`](/docs/(qwikrouter)/action/index.mdx) and the action's `invalidate` option),
+- you invalidate its signal manually, for example from `usePoll` (see [Polling](#polling)).
+
+A re-fetch that returns unchanged data doesn't rerender anything: the response text is compared to the previous one and the signal keeps the same object.
+
+A loader in `src/routes/product/[productId]/index.tsx` runs when the user navigates to `/product/1` or `/product/2`, but not when they navigate to `/about`.
+
+<Note>Reading a loader hook from a component on a route where that loader is **not** declared returns `undefined` at runtime. The TypeScript signature does not reflect this — it's intentional, because route loaders that redirect can transiently be in this state during navigation. Treat it as an error on your part: if a component uses a loader, that loader's route must be the active route.</Note>
+
+### Search params (`search`)
+
+The `search` option declares which URL search parameters (not the route params) the loader actually depends on:
+
+- **What gets sent.** The loader's JSON request URL only includes the listed params, sorted into a stable order. Other params are stripped, so unrelated query strings don't bust the cache.
+- **What the loader sees.** During SSR and loader JSON requests, the loader's `url` and `query` are filtered to those same params. The original is still visible on `request.url`, but you should not use it.
+- **When it re-fetches.** The signal only re-fetches when a listed search param (or the route path) changes.
+
+```tsx title="src/routes/products/index.tsx"
+export const useFilteredProducts = routeLoader$(
+  async ({ url }) => {
+    const category = url.searchParams.get('category');
+    const sort = url.searchParams.get('sort') ?? 'newest';
+    return await db.products.list({ category, sort });
+  },
+  {
+    // Only `?category=` and `?sort=` matter; `?utm_source=` etc. are ignored.
+    search: ['category', 'sort'],
+  }
+);
+```
+
+`search: []` means the loader doesn't depend on any search params — pure path-keyed cache, best reuse across visits. When `search` is omitted, all search params are forwarded (subject to `strictLoaders`, below).
+
+<Note>The `strictLoaders` Vite plugin option (default `true` in v2) applies `search: []` to every loader that doesn't set it explicitly. This is the better default: each unique URL produces at most one cache entry per loader, so unrelated tracking params (`?utm_source=…`, `?fbclid=…`) don't generate fresh, never-reused cache entries for an identical response. To opt a loader into reacting to a query string, set `search` explicitly. Pass `strictLoaders: false` to `qwikRouter()` to restore "all params, all re-fetches" globally.</Note>
+
+## Cache & freshness
+
+Loader responses come from per-loader JSON endpoints, and the browser HTTP cache is the single freshness authority: every navigation re-fetches every loader, and the loader's `Cache-Control` header decides whether that fetch is served from cache, revalidated, or hits the server.
+
+### `cacheControl`
+
+Sets the `Cache-Control` header on the loader's JSON responses. It accepts everything the [`cacheControl()`](/docs/(qwikrouter)/caching/index.mdx) request method accepts — `'immutable'`, a max-age number in seconds, an options object — or a function of the request event (return `null` to skip the header). A `Cache-Control` header set inside the loader function wins over the option. A failed loader is always sent with `no-store`, so no cache ever reuses the failure.
+
+The default is `no-cache`: the browser always revalidates, which pairs well with `eTag` for cheap 304 responses.
+
+```tsx title="src/routes/product/[productId]/index.tsx"
+export const useProductDetails = routeLoader$(
+  async ({ params }) => fetchProduct(params.productId),
+  { cacheControl: 60 } // fresh for 1 minute, no requests during that time
+);
+```
+
+<Note>**`cacheControl: 'immutable'` is special.** It means the data for a URL never changes until the application is rebuilt (the manifest hash busts the cache). Immutable loaders are fully lazy on the client: they are skipped by the per-navigation re-fetch, the eager navigation fetch, and link data prefetching, so their JSON downloads only when a component actually reads the signal — and is then browser-cached for the life of the deploy. For SSG they are pre-generated as static `.json` files on disk, so route loaders work even on fully static sites.</Note>
+
+### Polling
+
+To keep loader data fresh while the user stays on the page, use `usePoll` from `@qwik.dev/utils`. It invalidates the signal on an interval (starting once the document is idle, resetting whenever new data lands), and each refetch goes through the browser cache like any other:
+
+```tsx
+import { usePoll } from '@qwik.dev/utils';
+
+export default component$(() => {
+  const stock = useStockLevel();
+  usePoll(stock, 30_000); // refetch every 30s
+  return <p>{stock.value} in stock</p>;
+});
+```
+
+You can also drive this manually: `signal.invalidate()` re-fetches while keeping the current value readable, and `signal.clear()` additionally drops the value so readers suspend until fresh data arrives.
+
+### `eTag`
+
+Adds an `ETag` header on the loader response and honors `If-None-Match`. Two modes:
+
+- **`eTag: 'some-string'`** — static eTag.
+- **`eTag: (requestEvent) => string | null`** — compute the eTag from request context (params, headers, cookies). The loader is skipped entirely on a 304. Return `null` or an empty string to disable for this request.
+
+Qwik normalizes eTag values by stripping weak-form `W/` prefixes, quotes, and forbidden chars, then sends a strong `ETag` header. Values that normalize to an empty string are treated as "no eTag provided".
+
+When a loader `cacheKey` callback needs the loader-filtered search string, read `ev.url.search`, which always reflects the loader's `search` option.
+
+```tsx title="src/routes/subscription/index.tsx"
+export const useSubscription = routeLoader$(
+  async (ev) => {
+    const user = ev.sharedMap.get('user')!;
+    return getSubscription(user.id);
+  },
+  {
+    cacheControl: 'no-cache',
+    eTag: (ev) => {
+      const { id } = ev.sharedMap.get('user')!;
+      const day = new Date().getDate();
+      return `${id}-${day}`; // valid for the rest of the day, per user
+    },
+  }
+);
+```
+
+### `serializationStrategy`
+
+By default the HTML response does **not** embed loader data. When the client resumes, the loader signal is empty until the browser fetches the JSON endpoint — meaning fast first paint, but a brief pending state for code that reads `.value` immediately.
+
+| Value      | Behavior                                                                |
+| ---------- | ----------------------------------------------------------------------- |
+| `'never'`  | Default. Data is discarded after SSR; the client refetches lazily.      |
+| `'always'` | Embed data in the HTML. Available immediately, no refetch, bigger HTML. |
+| `'auto'`   | Embed when small, lazy-load when large.                                 |
+
+```tsx title="src/routes/product/[productId]/index.tsx"
+export const useProductDetails = routeLoader$(
+  async ({ params }) => fetchProduct(params.productId),
+  { serializationStrategy: 'always' }
+);
+```
+
+To set the default for the whole app, configure the Vite plugin:
+
+```ts title="vite.config.ts"
+import { qwikRouter } from '@qwik.dev/router/vite';
+
+export default () => ({
+  plugins: [
+    qwikRouter({
+      defaultLoadersSerializationStrategy: 'always',
+    }),
+  ],
+});
+```
+
+When using lazy-loaded data, wrap the reader in `<Pending>` to show a placeholder until it arrives — see [Reading the result in a component](#reading-the-result-in-a-component).
+
+## Background loaders (`blockSSR`)
+
+By default a loader **blocks SSR**: the server awaits it before rendering, so a `throw redirect()` or `throw error()` short-circuits the HTTP response. When several loaders block, the first one to error, in route order, decides the error, however the last one to set the status, in chronological order, decides the status.
+
+Set `blockSSR: false` to run a loader in the background instead. The server starts it but does not wait: rendering begins immediately, and reading `.value` suspends only that read until the loader resolves. This starts SSR sooner, and is the recommended setting, unless you need to control the request from the loader.
+
+`blockSSR: false` is experimental — to use it, you must add `experimental: ['blockSSR']` to your `qwikVite` plugin options.
+
+```tsx title="src/routes/product/[productId]/index.tsx"
+export const useRecommendations = routeLoader$(
+  async ({ params }) => fetchRecommendations(params.productId),
+  { blockSSR: false }
+);
+```
+
+A background loader is treated as a **separate request**: it cannot redirect or error the page response. If it calls `redirect()` or `error()`, that control flow is captured on its own signal (surfacing when `.value` is read) and never changes the page's status or headers. Keep route guards that must redirect or set a status in a [request handler](/docs/middleware) such as `onRequest`, or in a blocking loader.
+
+Note: when the client fetches a background loader for SPA navigation, there is no difference between a blocking and non-blocking loader — the SPA fetch is always async, and the page is already rendered. Errors are not surfaced directly, but redirects are followed automatically.
+
+## Accessing `RequestEvent`
+
+The loader function receives the same [`RequestEvent`](/docs/middleware#requestevent) as middleware. Use it to read params, headers, cookies, the URL, and so on.
+
+```tsx title="src/routes/recommendations/[user]/index.tsx"
+export const useRecommendations = routeLoader$(async (requestEvent) => {
+  const userId = requestEvent.params.user;
+  const lang = requestEvent.request.headers.get('accept-language') ?? 'en';
+  const res = await fetch(
+    `https://.../recommendations?user=${userId}&lang=${lang}`
+  );
+  return (await res.json()) as Product[];
+});
+```
+
+## Composing loaders with `resolveValue`
+
+A loader can read another loader's result via `requestEvent.resolveValue(otherLoader)`:
+
+```tsx title="src/routes/user/[userId]/index.tsx"
+export const useUser = routeLoader$(async ({ params }) =>
+  fetchUser(params.userId)
+);
+
+export const useUserPosts = routeLoader$(async ({ resolveValue }) => {
+  const user = await resolveValue(useUser);
+  return fetchPostsFor(user.id);
+});
+```
+
+`resolveValue` runs the dependency loader once per request and caches the result, so reading the same loader from multiple places doesn't duplicate work.
+
+<Note>`resolveValue` only resolves other `routeLoader$`s — actions are **not** visible to it. See [Loaders cannot read action state](#loaders-cannot-read-action-state) below.</Note>
+
+## Loaders cannot read action state
+
+`requestEvent.resolveValue(actionQrl)` always returns `undefined` inside a loader, regardless of how the loader was triggered (initial render, navigation, post-action invalidation, polling).
+
+The reason is the same as everywhere else on this page: **a loader's output must be a pure function of the URL.** Action results are transient — they only exist on the request that handled the submission, and the loader refetch that follows an action is a separate GET with no action context. Letting loaders see action state would silently produce different data on the inline-render path (no JS) than on the JSON refetch path (SPA), so the API does not expose action state to loaders at all. The same rule applies to anything else valid for one request — request bodies, one-shot tokens, `Set-Cookie` values written by middleware on this request.
+
+Read action state directly from the action signal where you render.
+
+```tsx /resolveValue/#a title="src/routes/[id]/index.tsx"
+export const useNameAction = routeAction$(async (data) => data);
+
+// ❌ `form` is always undefined, regardless of whether an action just ran.
+export const useGreetingBroken = routeLoader$(async ({ resolveValue, params }) => {
+  const form = await resolveValue(useNameAction);
+  return { name: form?.name ?? params.id };
+});
+
+// ✅ Loader is a pure function of the URL; component blends in transient action state.
+export const useGreeting = routeLoader$(({ params }) => ({ name: params.id }));
+
+export default component$(() => {
+  const greeting = useGreeting();
+  const action = useNameAction();
+  const name = action.value?.name ?? greeting.value.name;
+  return (
+    <Form action={action}>
+      <p>Hello, {name}!</p>
+      <input name="name" />
+      <button type="submit">Update</button>
+    </Form>
+  );
+});
+```
+
+### What did people use action-state-in-loaders for?
+
+| Use case                                            | Workaround                                                                                                                                                                                  |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Echo the just-submitted form value back to the page | Loader returns the URL-derived value; the component overlays `action.value` on top, e.g. `action.value?.name ?? loader.value.name`.                                                          |
+| Recompute derived data from the submission          | Put the inputs in the URL (search params, or `goto()` after the action) so the loader reads them like any other route input.                                                                |
+| Refresh authoritative data after a mutation         | The action writes to your store (DB, KV, etc.); the loader reads from that store. The action's `invalidate` list re-runs the loader and it picks up the new state — no action result needed. |
+| Show success / error feedback                       | Read the action signal directly: `action.value`, `action.isRunning`, `action.value?.failed`. Ephemeral UI feedback doesn't belong in a loader.                                              |
+
+## Options reference
+
+| Option                  | Default      | Effect                                                                                                |
+| ----------------------- | ------------ | ----------------------------------------------------------------------------------------------------- |
+| `cacheControl`          | `no-cache`   | `Cache-Control` for the JSON responses; the browser cache decides freshness. `'immutable'` enables SSG loader files. |
+| `serializationStrategy` | `'never'`    | `'never'` / `'always'` / `'auto'` — embed loader data in the SSR HTML?                                |
+| `blockSSR`              | `true`       | Await the loader before SSR (can redirect/error the response). `false` runs it in the background (experimental). |
+| `eTag`                  | —            | `true` (auto-hash), string, or `(ev) => string \| null`. Returns 304 on match.                       |
+| `search`                | `[]` *       | Allowlist of search params the loader depends on. *(default `[]` when `strictLoaders` is enabled)*    |
+| `validation`            | —            | Array of [`DataValidator`](/docs/(qwikrouter)/validator/index.mdx)s applied before the loader runs.   |
+
+The Vite plugin `qwikRouter()` exposes app-wide defaults via `defaultLoadersSerializationStrategy` and `strictLoaders`.

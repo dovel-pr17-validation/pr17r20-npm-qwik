@@ -1,0 +1,46 @@
+@reference "../../global.css";
+
+.on-this-page {
+  @apply w-[300px] overflow-y-auto pb-10 text-base;
+}
+
+.on-this-page h6 {
+  @apply font-bold text-left text-base leading-[22px] text-foreground-base;
+}
+
+.on-this-page ul {
+  @apply flex flex-col;
+}
+
+.on-this-page li {
+  @apply rounded-lg;
+}
+
+.on-this-page-item {
+  @apply block font-semibold text-base leading-[1.8] py-2.5 px-3 no-underline text-foreground-base;
+}
+
+.on-this-page-item:hover {
+  @apply text-standalone-accent;
+}
+
+.on-this-page-item-active {
+  @apply block font-semibold text-base leading-[1.8] py-2.5 px-3 underline underline-offset-8 text-standalone-emphasis;
+  text-decoration-color: var(--color-border-emphasis);
+}
+
+.more-section {
+  @apply flex flex-col gap-4;
+}
+
+.on-this-page-more-heading {
+  @apply font-bold text-left text-base leading-[22px] text-foreground-base;
+}
+
+.more-item {
+  @apply flex gap-2 items-center font-semibold text-sm leading-5 text-secondary-foreground-base;
+}
+
+.more-item:hover {
+  @apply underline;
+}

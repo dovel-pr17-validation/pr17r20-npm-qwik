@@ -1,0 +1,228 @@
+---
+title: Frequently Asked Questions | Introduction
+contributors:
+  - tidiview
+  - adamdbradley
+  - manucorporat
+  - hamatoyogi
+  - fabien0102
+  - saisrikardumpeti
+  - ryankshaw
+  - McMillanThomas
+  - ahhshm
+  - jangerhofer
+  - mrcaidev
+  - literalpie
+  - zanettin
+  - forresst
+  - dzearing
+  - fum4
+  - colynyu
+  - eltociear
+  - tihuan
+  - ptu14
+  - reemardelarosa
+  - ETN-Tech
+  - spicyzboss
+  - mhevery
+  - wtlin1228
+  - ilteoood
+  - pipisso
+  - ThatJSGuy
+  - mrhoodz
+  - moinulmoin
+  - brkyurun
+  - PatrickJS
+  - maiieul
+updated_at: '2025-06-08T18:58:36Z'
+created_at: '2023-03-20T23:45:13Z'
+---
+
+import { Note } from '~/components/note/note';
+
+# FAQ
+
+## Is _@QwikDev_ a sentient AI?
+
+Yes, and I am very funny too! [follow me](https://twitter.com/QwikDev)
+
+## How is Qwik different from other frameworks?
+
+Qwik has **two** hidden superpowers:
+- The fastest TTI (Time To Interactive) among reactive web frameworks thanks to its javascript streaming architecture.
+- An SSR-first resumable mental model, that is as easy to grasp as good ol' CSR/SPA.
+
+Thanks to the ability to run render functions and tasks only on the server during startup, writing Qwik code feels like SSR and CSR are part of the same world, without the worries of hitting a performance wall along the road.
+
+You can focus on code and features without worrying so much about the amount of code or how it's written.
+
+See [think qwik](../concepts/think-qwik/index.mdx) for a deep dive on Qwik's mental modal.
+
+## Why another framework?
+
+Without a resumable model, javascript streaming is hardly achievable. Even with some sort of on-demand lazy hydration — e.g. by hydrating a component on user interaction for example — all side effects would still need to run eagerly on the client.
+
+If you're already familiar with Qwik, this would be the equivalent of doing all your side effects solely in `useVisibleTask$` hooks and downloading eagerly all those chunks on startup, but worse since the bundles would also include the rest of the component's code.
+
+## Is Qwik hard to learn?
+
+Qwik’s syntax and APIs are pretty similar to other reactive frameworks. It follows JSX, compiles to fine-grained reactivity with hooks, effects, and data-fetching.
+
+The major authoring DX difference is its SSR-first, resumable architecture (`useTask$` vs `useVisibleTask$`), which is straightforward to learn and involves far less gotchas than hydration mismatch runtime errors. Qwik warns you about SSR serialization boundaries at authoring time so you and your agents can be confident the code will work in production.
+
+Qwik also comes with Qwik Router which handles file based routing and data fetching through loaders and actions, similar to React Router.
+
+Many resources are at your disposal to learn Qwik: the [getting started](./getting-started) guide, the interactive [tutorial](../../tutorial/welcome/overview/) the documentation itself and online video courses.
+
+## What are all those `$` signs?
+
+You might have noticed there are more [`$`](../advanced/dollar/index.mdx) signs than usual in Qwik apps, such as: `component$()`, `useTask$()`, and `<div onClick$={() => console.log('click')} />`. It serves as a marker to split your code into smaller segmented chunks and enable javascript streaming prioritized event preloads.
+
+**Example:**
+```tsx
+import { component$ } from '@qwik.dev/core';
+
+export default component$(() => {
+  console.log('render');
+  return <button onClick$={() => console.log('hello')}>Hello Qwik</button>;
+});
+```
+
+Thanks to the `$` syntax, the component above is split into:
+```js title="app.js"
+import { componentQrl, qrl } from '@qwik.dev/core';
+
+const App = /*#__PURE__*/ componentQrl(
+  qrl(() => import('./app_component_akbu84a8zes.js'), 'App_component_AkbU84a8zes')
+);
+
+export { App };
+```
+
+```js title="app_component_akbu84a8zes.js"
+import { jsx as _jsx } from '@qwik.dev/core/jsx-runtime';
+import { qrl } from '@qwik.dev/core';
+export const App_component_AkbU84a8zes = () => {
+  console.log('render');
+  return /*#__PURE__*/ _jsx('p', {
+    onClick$: qrl(
+      () => import('./app_component_p_onclick_01pegc10cpw'),
+      'App_component_p_onClick_01pEgC10cpw'
+    ),
+    children: 'Hello Qwik',
+  });
+};
+```
+
+```js title="app_component_p_onclick_01pegc10cpw.js"
+export const App_component_p_onClick_01pEgC10cpw = () => console.log('hello');
+```
+
+<Note>The `$` is not related to `jQuery`, Svelte or any other framework.</Note>
+
+## Isn't lazy-loading on user interaction bad for the user experience?
+
+A common misconception is that since Qwik relies on lazy-loading, it downloads the javascript modules on user interaction. Qwik **preloads** the javascript modules on startup so that in most cases they are already preloaded and can execute right away on user interaction. It is only when the code for a given user interaction has **not** been preloaded **yet** that Qwik will JIT preload the corresponding chunks to execute them as soon as possible.
+
+In order to improve the likelihood of the code being preloaded for a given user interaction, Qwik uses code metadata to speculatively preload the code that is most likely to be requested. In addition, [Qwik insights](../../labs/insights/index.mdx) can be used to gather user data and know which modules are most likely to be requested by users and therefore know how to prioritize them and in which order.
+
+What is bad for the user experience, is having to eagerly execute and therefore download a lot of code on startup, slowing down TTI proportionally to the amount of code. This is what the other reactive frameworks do, and prevents them from being able to take advantage of speculative and JIT preloading.
+
+## Does Qwik generate too many javascript chunks?
+
+In dev mode, Qwik splits your code into the smallest possible chunks. In production, it bundles related chunks back together to avoid making too many requests. It is also possible to not bundle related chunks together, which reduces cache invalidation and therefore improves cache hit rates but can be slightly more expensive if your deployment provider charges on a per-request basis. 
+
+## Does Qwik use a vDOM (Virtual DOM)?
+
+Not in the traditional sense. In most cases, Qwik relies on serialized state and direct fine-grained reactivity DOM updates using signals. There is no component re-render mechanisms to know and think about.
+
+If the change in state does not have a structural change then Qwik will most likely not use vDOM. For example: 
+```ts title="No DOM structure change, only update value"
+export const NoStructuralChange = component$(() => {
+  const count = useSignal(0);
+
+  return (
+    <>
+    {/* This will not cause vDOM to activate. (No DOM structure change, only update text value) */}
+     <div>Count: {count.value}</div>
+     <button onClick$={() => count.value++}>+1</button>
+    </>
+  );
+});
+```
+
+When there is a structural change, Qwik relies on a what we call a vNode tree. In the following example, the DOM structure needs to be updated (replace `<h1>` with `<button>`), so the vNode tree will be used for rendering:
+```ts title="DOM structure change"
+export const StructuralChange = component$(() => {
+  const isLoggedIn = useSignal(false);
+  return (
+    <div>
+      {isLoggedIn.value ? <h1>you are logged in!</h1> : <button>Log in</button>}
+    </div>
+  )
+});
+```
+
+<Note>Unlike with React's vDOM, re-rendering the vNode tree does not mean re-running hooks. In Qwik, it is purely a question of how much DOM needs to be updated.</Note>
+
+## Can Qwik Router do SPA?
+
+Yes, and you can even choose between  MPA and SPA on a `<Link>` vs `<a>` basis. Using the `<Link>` component triggers an SPA navigation while `<a>` naturally triggers a standard browser MPA navigation.
+
+MPA vs SPA is no longer an architectural decision taken at the beginning of the project, but a decision made for every link.
+
+## When should I use SPA over MPA in Qwik?
+In Qwik, the difference isn’t as big as it is for the other reactive frameworks. 
+
+In terms of performance, SPA requires a tiny inline script but allows instant navigations once all the code has been preloaded and the other routes Link prefetched. On the other hand, if there are still ongoing preloads, MPA is faster because there is no need to load render functions on the client. 
+
+In terms of UI, SPA retains state while MPA resets it. SPA also means different accessibility patterns.
+
+## Can I enjoy the rich React ecosystem?
+
+Yes! Qwik can `qwikify$` React components, [check out the docs](/docs/integrations/react/index.mdx).
+
+## Does Qwik do partial hydration?
+
+No. Partial hydration (or island architecture), popularized by [Astro](https://astro.build/), is about breaking the app into islands of interactivity to avoid [full-page hydration](https://www.builder.io/blog/hydration-is-pure-overhead), where all existing components in the page need to be downloaded and executed.
+
+For this to work, developers need to manually define the islands, and then manually describe in which situations they should be hydrated. The islands also cannot communicate with each other.
+
+Instead, Qwik components do not hydrate at all. Qwik achieves this through a powerful serialization system that serializes only the necessary state in the reactivity graph. This way, the app can resume without eagerly running any JS.
+
+We think resumability scales without the negative trade-offs of partial hydration.
+
+## Which browsers are supported?
+
+Qwik uses Vite under the hood so you shouldn't need to worry about whether the browser supports it if you're targeting modern web users.<br/>
+Here is the [Vite browser compatibility](https://vite.dev/guide/build.html#browser-compatibility).
+
+## In which languages is Qwik written?
+
+Most of Qwik is written in [TypeScript](https://www.typescriptlang.org/), a superset of JavaScript that adds optional static typing and other features. However, the Qwik compiler (or optimizer) is written in Rust, a language that is very fast and memory efficient.
+
+## Does Qwik have a community?
+
+Yes! there is a growing community of Qwik developers at [Discord](https://qwik.dev/chat) and [GitHub](https://github.com/QwikDev/qwik). They are making amazing contributions to the framework, building sites at scale, and helping each other. [Join us](https://qwik.dev/chat).
+
+## Is Qwik an "Alex Russell Approved" framework?
+
+Yes! Alex Russell ([@slightlylate](https://twitter.com/slightlylate)), known for his contributions to PWAs, W3C TAG, WC, TC39 & ES6, Chrome Frame, Dojo, and more, is often highly critical of JavaScript frameworks. Nonetheless, [he approves of Qwik](https://infrequently.org/2023/02/the-market-for-lemons/#fn-alex-approved-1).
+
+## Is it true that Qwik serializes too much data in the HTML?
+
+False. Qwik serializes only the data that is needed for the current page. If a page has 1000 components but only one is interactive the amount of data serialized is proportional to the amount of interactivity, not the amount of components.
+
+## Is Qwik open source?
+
+Yes, the license is [MIT](https://github.com/QwikDev/qwik/blob/main/LICENSE). Installing Qwik will not bloat your node_modules nor your lawyers.
+
+## What’s the catch?
+
+There’s none. We are open about the pros and cons and like with any tool choice, there are tradeoffs that should be considered. Javascript streaming as an innovation speeds up TTI significantly and therefore benefits the user experience, but it comes with a slightly different DX and less maturity.
+
+On the DX, developers must learn about the async $ syntax, serialization boundaries, and `useTask$` vs `useVisibleTask$`.
+
+On maturity, Qwik remains a relatively new, less battle tested reactive framework, and as such may evolve more rapidly and more significantly. You may also have to `qwikify$` certain niche library components until there is a Qwik port for it. And some areas of the framework, like SSR render or reactivity performance might still not be fully optimized.
+
+Overall, we believe those cons are largely outweighed by the fact that Qwik scales significantly more and is much smoother to use as applications grow.

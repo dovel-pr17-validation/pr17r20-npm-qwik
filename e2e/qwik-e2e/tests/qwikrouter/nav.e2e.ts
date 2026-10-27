@@ -1,0 +1,860 @@
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import {
+  assertPage,
+  getScrollHeight,
+  getWindowScrollXY,
+  linkNavigate,
+  load,
+  scrollDebounceDetector,
+  scrollDetector,
+  scrollTo,
+} from './util.js';
+
+test.describe('nav', () => {
+  // Firefox can lag a bit before exposing image DOM properties on the MPA/SSR path,
+  // so wait for a fully loaded image state instead of reading natural* eagerly.
+  async function expectLoadedImage(locator: Locator, naturalWidth: number, naturalHeight: number) {
+    await expect
+      .poll(async () => {
+        return locator.evaluate((node) => {
+          if (!(node instanceof HTMLImageElement)) {
+            return null;
+          }
+          return {
+            complete: node.complete,
+            currentSrc: !!node.currentSrc,
+            naturalHeight: node.naturalHeight,
+            naturalWidth: node.naturalWidth,
+          };
+        });
+      })
+      .toEqual({
+        complete: true,
+        currentSrc: true,
+        naturalHeight,
+        naturalWidth,
+      });
+  }
+
+  async function reloadFromPage(page: Page) {
+    const loaded = page.waitForEvent('load');
+    await page.evaluate(() => location.reload());
+    await loaded;
+  }
+
+  async function waitForPreventNavigateReady(page: Page) {
+    await expect
+      .poll(async () =>
+        page.evaluate(async () => {
+          const count = document.querySelector('#pn-runcount');
+          const before = count?.textContent;
+          window.dispatchEvent(new Event('beforeunload', { cancelable: true }));
+          await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+          return count?.textContent !== before;
+        })
+      )
+      .toBe(true);
+  }
+
+  test.describe('mpa', () => {
+    test.use({ javaScriptEnabled: false });
+    tests();
+  });
+
+  test.describe('spa', () => {
+    test.use({ javaScriptEnabled: true });
+    tests();
+    spaOnlyTests();
+  });
+
+  function spaOnlyTests() {
+    test('issue4100', async ({ page }) => {
+      await page.goto('/qwikrouter-test/issue4100/');
+      const increment = page.locator('button');
+      const link = page.locator('a');
+
+      await expect(increment).toHaveText('Click me 0');
+      await increment.click();
+      await expect(increment).toHaveText('Click me 1');
+      await link.click();
+      expect(new URL(page.url()).hash).toBe('#navigate');
+      await expect(increment).toHaveText('Click me 1');
+    });
+
+    test('should update history and render immediately during SPA nav', async ({ page }) => {
+      let releaseRoute!: () => void;
+      let markRouteRequested!: () => void;
+      const routeRequested = new Promise<void>((resolve) => (markRouteRequested = resolve));
+      const routeReleased = new Promise<void>((resolve) => (releaseRoute = resolve));
+      await page.route('**/products/jacket/q-loader-*.json', async (route) => {
+        markRouteRequested();
+        await routeReleased;
+        await route.continue();
+      });
+
+      await page.goto('/qwikrouter-test/products/hat/');
+      const link = page.locator('[data-test-link="products-jacket"]');
+      const heading = page.locator('h1');
+      const navigationStatus = page.locator('#navigation-status');
+
+      await expect(heading).toHaveText('Product: hat');
+      await expect(page.getByText('Price: $21.96')).toBeVisible();
+      await expect(navigationStatus).toHaveText('idle');
+      const click = link.click();
+      await routeRequested;
+
+      try {
+        await expect(navigationStatus).toHaveText('navigating');
+      } finally {
+        releaseRoute();
+      }
+      await click;
+      // URL and params update immediately — the nav task does not wait for loaders.
+      // The heading uses params.id directly so it switches right away.
+      await expect
+        .poll(() => new URL(page.url()).pathname)
+        .toBe('/qwikrouter-test/products/jacket/');
+      await expect(heading).toHaveText('Product: jacket');
+      await expect(page.getByText('Price: $48.96')).toBeVisible();
+      await expect(navigationStatus).toHaveText('idle');
+    });
+
+    test('issue9247: keeps Back while the init popstate handler is loading', async ({ page }) => {
+      let releasePopstate!: () => void;
+      const popstateHeld = new Promise<void>((resolve) => (releasePopstate = resolve));
+      await page.route('**/*qrouterpopstate*.js*', async (route) => {
+        await popstateHeld;
+        await route.continue();
+      });
+
+      await page.goto('/qwikrouter-test/issue9247/');
+      const filter = page.locator('#filter');
+      const list = page.locator('#list li');
+      await expect(list).toHaveText(['Bianchi', 'Rossi', 'Verdi']);
+      await page.waitForFunction(() => (window as any)._qRouterInitPopstate);
+      await page.evaluate(async () => {
+        // The route is cached; only the lazy popstate handler stays blocked
+        const routeUrl = new URL('/qwikrouter-test/build/issue9247.js', location.href);
+        await import(routeUrl.href);
+        (window as any).__issue9247Back = new Promise<void>((resolve) => {
+          addEventListener('popstate', () => resolve(), { once: true });
+        });
+        (window as any).__issue9247HoldRender = () =>
+          new Promise<void>((resolve) => {
+            (window as any).__issue9247ReleaseRender = resolve;
+          });
+      });
+
+      try {
+        await filter.click();
+        await page.waitForFunction(() => !!(window as any).__issue9247ReleaseRender);
+        await expect(page).toHaveURL('/qwikrouter-test/issue9247/?q=Bianchi');
+        expect(await page.evaluate(() => !!(window as any)._qRouterSPA)).toBe(false);
+
+        await page.goBack();
+        await page.evaluate(() => (window as any).__issue9247Back);
+        await page.evaluate(() => {
+          delete (window as any).__issue9247HoldRender;
+          (window as any).__issue9247ReleaseRender();
+        });
+        // Recovery must finish without waiting for the popstate QRL
+        await expect(filter).toHaveAttribute('data-completed-navigations', '1');
+        await expect(page.locator('#nav-status')).toHaveText('idle');
+        await expect(page).toHaveURL('/qwikrouter-test/issue9247/');
+        await expect(page.locator('#q')).toHaveValue('');
+        await expect(list).toHaveText(['Bianchi', 'Rossi', 'Verdi']);
+      } finally {
+        releasePopstate();
+      }
+    });
+
+    test('issue9247: keeps Back while the navigation render is held', async ({ page }) => {
+      await page.goto('/qwikrouter-test/issue9247/');
+      const filter = page.locator('#filter');
+      const list = page.locator('#list li');
+      const navigationStatus = page.locator('#nav-status');
+
+      // Initialize SPA handling before testing the goto render window
+      await filter.click();
+      await expect(filter).toHaveAttribute('data-completed-navigations', '1');
+      await expect(list).toHaveText(['Bianchi']);
+      await page.goBack();
+      await expect(list).toHaveText(['Bianchi', 'Rossi', 'Verdi']);
+      await expect(navigationStatus).toHaveText('idle');
+
+      await page.evaluate(() => {
+        const state = window as any;
+        state.__issue9247HoldRender = () =>
+          new Promise<void>((resolve) => {
+            state.__issue9247ReleaseRender = resolve;
+          });
+        // The warmed SPA handler receives Back before this listener
+        state.__issue9247BackHandled = new Promise<void>((resolve) => {
+          addEventListener('popstate', () => resolve(), { once: true });
+        });
+      });
+
+      await filter.click();
+      await page.waitForFunction(() => !!(window as any).__issue9247ReleaseRender);
+      try {
+        await expect(page).toHaveURL('/qwikrouter-test/issue9247/?q=Bianchi');
+        await expect(page.locator('#url-search')).toBeEmpty();
+        await page.goBack();
+        await page.evaluate(() => (window as any).__issue9247BackHandled);
+      } finally {
+        await page.evaluate(() => {
+          delete (window as any).__issue9247HoldRender;
+          (window as any).__issue9247ReleaseRender();
+        });
+      }
+
+      // Require fresh completion rather than the warm-up's stale idle state
+      await expect(filter).toHaveAttribute('data-completed-navigations', '2');
+      await expect(navigationStatus).toHaveText('idle');
+      await expect(page).toHaveURL('/qwikrouter-test/issue9247/');
+      await expect(page.locator('#q')).toHaveValue('');
+      await expect(list).toHaveText(['Bianchi', 'Rossi', 'Verdi']);
+    });
+
+    test.describe('scroll-restoration', () => {
+      test('should not refresh again on popstate after manual refresh', async ({
+        page,
+        browserName,
+      }) => {
+        test.slow(
+          browserName === 'firefox',
+          'Firefox can be slow to resume SPA popstate handling after reload'
+        );
+        const documentLoadsKey = '__qwik_router_document_loads__';
+        await page.addInitScript((storageKey) => {
+          const documentLoads = Number(sessionStorage.getItem(storageKey) || '0') + 1;
+          sessionStorage.setItem(storageKey, String(documentLoads));
+        }, documentLoadsKey);
+        const getDocumentLoads = () =>
+          page.evaluate(
+            (storageKey) => Number(sessionStorage.getItem(storageKey) || '0'),
+            documentLoadsKey
+          );
+
+        await page.goto('/qwikrouter-test/scroll-restoration/page-long/');
+        const link = page.locator('#to-page-short');
+        await link.click();
+
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/page-short/');
+        await expect(page.locator('h1')).toHaveText('Page Short');
+        await expect.poll(getDocumentLoads).toBe(1);
+
+        await reloadFromPage(page);
+        await expect(page.locator('h1')).toHaveText('Page Short');
+        await expect.poll(getDocumentLoads).toBe(2);
+
+        await page.goBack();
+
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/page-long/');
+        await expect(page.locator('h1')).toHaveText('Page Long', { timeout: 15000 });
+        await expect.poll(getDocumentLoads).toBe(2);
+
+        await page.goForward();
+
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/page-short/');
+        await expect(page.locator('h1')).toHaveText('Page Short', { timeout: 15000 });
+        await expect.poll(getDocumentLoads).toBe(2);
+      });
+      test('should follow a history move made before the router init loaded', async ({ page }) => {
+        await page.goto('/qwikrouter-test/scroll-restoration/page-long/');
+        await page.locator('#to-page-short').click();
+        await expect(page.locator('h1')).toHaveText('Page Short');
+
+        // hold every lazy chunk but the loader, so the reloaded page cannot run its router init
+        let releaseChunks!: () => void;
+        const chunksHeld = new Promise<void>((resolve) => (releaseChunks = resolve));
+        await page.route('**/build/**', async (route) => {
+          if (!route.request().url().endsWith('/qwikloader.js')) {
+            await chunksHeld;
+          }
+          await route.continue();
+        });
+        try {
+          // the load event waits for the held chunks, so the parsed document has to do
+          const parsed = page.waitForEvent('domcontentloaded');
+          await page.evaluate(() => location.reload());
+          await parsed;
+          await expect(page.locator('h1')).toHaveText('Page Short');
+          // the loader has to reach qinit first; before that nothing has recorded the path
+          await page.waitForFunction(() => (window as any)._qcs === true);
+
+          await page.goBack({ waitUntil: 'commit' });
+          await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/page-long/');
+          expect(
+            await page.evaluate(
+              () => !!(window as any)._qRouterSPA || !!(window as any)._qRouterInitPopstate
+            )
+          ).toBe(false);
+        } finally {
+          releaseChunks();
+        }
+
+        await expect(page.locator('h1')).toHaveText('Page Long', { timeout: 15000 });
+      });
+
+      test('should scroll on hash change', async ({ page }) => {
+        await page.goto('/qwikrouter-test/scroll-restoration/hash/');
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/hash/');
+
+        const link = page.locator('#hash-1');
+        await link.click();
+
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/hash/#hash-2');
+        let scrollY1;
+        do {
+          await page.waitForTimeout(10);
+          scrollY1 = (await getWindowScrollXY(page))[1];
+        } while (scrollY1 < 1000);
+        expect(scrollY1).toBeGreaterThan(1090);
+        expect(scrollY1).toBeLessThan(1110);
+
+        const link2 = page.locator('#hash-2');
+        await scrollTo(page, 0, 1000);
+        await link2.click();
+
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/hash/#hash-1');
+        await page.waitForTimeout(50);
+        let scrollY2;
+        do {
+          await page.waitForTimeout(10);
+          scrollY2 = (await getWindowScrollXY(page))[1];
+        } while (scrollY2 > 500);
+        expect(scrollY2).toBeGreaterThan(70);
+        expect(scrollY2).toBeLessThan(90);
+
+        const link3 = page.locator('#no-hash');
+        await scrollTo(page, 0, 2000);
+        await link3.click();
+
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/hash/');
+        await page.waitForTimeout(50);
+        let scrollY3;
+        do {
+          await page.waitForTimeout(10);
+          scrollY3 = (await getWindowScrollXY(page))[1];
+        } while (scrollY3 > 1000);
+        expect(await getWindowScrollXY(page)).toStrictEqual([0, 0]);
+      });
+      test('should restore scroll on back and forward navigations', async ({ page }) => {
+        await page.goto('/qwikrouter-test/scroll-restoration/page-long/');
+        const link = page.locator('#to-page-short');
+        const scrollHeightLong = await getScrollHeight(page);
+        await scrollTo(page, 0, scrollHeightLong);
+        const scrollDetector1 = scrollDetector(page);
+        await link.click();
+
+        await scrollDetector1;
+        await expect(page.locator('h1')).toHaveText('Page Short');
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/page-short/');
+        await page.waitForFunction(() => window.scrollX === 0 && window.scrollY === 0);
+        // expect(await getWindowScrollXY(page)).toStrictEqual([0, 0]);
+
+        const scrollHeightShort = await getScrollHeight(page);
+        await scrollTo(page, 0, scrollHeightShort);
+
+        // QwikRouter relies on a debounced scroll handler to save scroll position.
+        // Once a popstate occurs we cannot update scroll position.
+        // We must wait for the debounce to trigger before popping.
+        await page.waitForTimeout(50);
+        await scrollDebounceDetector(page);
+
+        const scrollDetector2 = scrollDetector(page);
+        await page.goBack();
+
+        await scrollDetector2;
+        await expect(page.locator('h1')).toHaveText('Page Long');
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/page-long/');
+        await page.waitForFunction(
+          (scrollHeightLong) => window.scrollX === 0 && window.scrollY === scrollHeightLong,
+          scrollHeightLong
+        );
+
+        const scrollDetector3 = scrollDetector(page);
+        await page.goForward();
+
+        await scrollDetector3;
+        await expect(page.locator('h1')).toHaveText('Page Short');
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/page-short/');
+        await page.waitForFunction(
+          (scrollHeightShort) => window.scrollX === 0 && window.scrollY === scrollHeightShort,
+          scrollHeightShort
+        );
+      });
+
+      test('should preserve scroll when submitting routeAction$ after SPA navigation', async ({
+        page,
+      }) => {
+        await page.goto('/qwikrouter-test/scroll-restoration/action-source/');
+        await page.locator('#to-scroll-action').click();
+
+        await expect(page).toHaveURL('/qwikrouter-test/scroll-restoration/action-form/');
+        await expect(page.locator('#scroll-action-heading')).toHaveText('Action Scroll');
+
+        await scrollTo(page, 0, 700);
+        await expect.poll(async () => (await getWindowScrollXY(page))[1]).toBe(700);
+
+        await page.locator('#scroll-action-submit').click();
+
+        await expect(page.locator('#scroll-action-result')).toHaveText('submitted: keep-scroll');
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) => {
+              requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+            })
+        );
+        expect((await getWindowScrollXY(page))[1]).toBeGreaterThan(600);
+      });
+
+      test('issue4502 (link)', async ({ page }) => {
+        await page.goto('/qwikrouter-test/issue4502/');
+        const count = page.locator('#count');
+        await expect(count).toHaveText('Count: 0');
+        await count.click();
+        await expect(count).toHaveText('Count: 1');
+        await page.locator('#link').click();
+        await page.waitForURL('/qwikrouter-test/issue4502/broken/route/');
+        await expect(page.locator('#route')).toHaveText('welcome to /broken/route');
+        await expect(count).toHaveText('Count: 1');
+      });
+    });
+
+    test.describe('modified clicks on same-page links', () => {
+      const modifiers = ['ControlOrMeta', 'Shift', 'Alt'] as const;
+
+      // Engines differ on the native tab, window or download, so suppress it and check only the router.
+      async function isClickTakenOver(link: Locator, modifier?: (typeof modifiers)[number]) {
+        const page = link.page();
+        await page.evaluate(() => {
+          // sessionStorage survives the reload the router runs for a same-path link.
+          sessionStorage.removeItem('clickTakenOver');
+          // Window listeners run after the router's document listeners.
+          window.addEventListener(
+            'click',
+            (event) => {
+              sessionStorage.setItem('clickTakenOver', String(event.defaultPrevented));
+              event.preventDefault();
+            },
+            { once: true }
+          );
+        });
+        await link.click({ modifiers: modifier ? [modifier] : [] });
+        return page.evaluate(() => JSON.parse(sessionStorage.getItem('clickTakenOver') ?? 'null'));
+      }
+
+      async function expectModifiedClicksLeftToBrowser(page: Page) {
+        for (const modifier of modifiers) {
+          for (const selector of ['#same-path', '#hash']) {
+            expect(
+              await isClickTakenOver(page.locator(selector), modifier),
+              `${modifier} click on ${selector}`
+            ).toBe(false);
+          }
+        }
+        await expect(page).toHaveURL('/qwikrouter-test/same-page-links/');
+
+        // A plain click is still the router's.
+        expect(await isClickTakenOver(page.locator('#hash'))).toBe(true);
+        await expect(page).toHaveURL('/qwikrouter-test/same-page-links/#target');
+      }
+
+      test('should stay with the browser before the router initializes', async ({ page }) => {
+        await page.goto('/qwikrouter-test/same-page-links/');
+        await page.waitForFunction(() => !!(window as any)._qRouterInitAnchors);
+
+        await expectModifiedClicksLeftToBrowser(page);
+      });
+
+      test('should stay with the browser after the router initializes', async ({ page }) => {
+        await page.goto('/qwikrouter-test/same-page-links/');
+        await page.locator('#to-other').click();
+        await expect(page.locator('h1')).toHaveText('Other Page');
+        await page.locator('#to-same-page-links').click();
+        await expect(page.locator('h1')).toHaveText('Same Page Links');
+        expect(await page.evaluate(() => (window as any)._qRouterSPA)).toBe(true);
+
+        await expectModifiedClicksLeftToBrowser(page);
+      });
+    });
+
+    test('issue 6660 internal params should not trigger navigation', async ({ page }) => {
+      await page.goto('/qwikrouter-test/issue6660/');
+      await expect(page.locator('#status')).toBeHidden();
+
+      {
+        const startUrl = page.url();
+
+        await page.getByText('Submit').click();
+        await page.waitForSelector('#status');
+
+        expect(page.url()).toBe(startUrl);
+      }
+
+      await page.goto('/qwikrouter-test/issue6660/?var=1&hello');
+      await expect(page.locator('#status')).toBeHidden();
+
+      {
+        const startUrl = page.url();
+        expect(startUrl).toContain('var=1&hello');
+
+        await page.getByText('Submit').click();
+        await page.waitForSelector('#status');
+
+        expect(page.url()).toBe(startUrl);
+      }
+    });
+
+    test('preventNavigate', async ({ page, browserName }) => {
+      test.slow(
+        browserName === 'firefox',
+        'Firefox beforeunload and SPA prevent navigation can be slow under parallel e2e load'
+      );
+      await page.goto('/qwikrouter-test/prevent-navigate/');
+      const toggleDirty = page.locator('#pn-button');
+      const link = page.locator('#pn-link');
+      const count = page.locator('#pn-runcount');
+      const mpaLink = page.locator('#pn-a');
+      const itemLink = page.locator('#pn-link-5');
+      const confirmText = page.locator('#pn-confirm-text');
+      const confirmYes = page.locator('#pn-confirm-yes');
+      // clean SPA nav
+      await expect(count).toHaveText('0');
+      await link.click();
+      await expect(link).not.toBeVisible();
+      expect(new URL(page.url()).pathname).toBe('/qwikrouter-test/');
+      await page.goBack();
+      await expect(count).toHaveText('0');
+      await expect(toggleDirty).toHaveText('is clean');
+      await waitForPreventNavigateReady(page);
+      await expect(count).toHaveText('1');
+      await toggleDirty.click();
+      await expect(toggleDirty).toHaveText('is dirty');
+      // dirty browser nav
+      let didTrigger = false;
+      page.once('dialog', async (dialog) => {
+        didTrigger = true;
+        expect(dialog.type()).toBe('beforeunload');
+        await dialog.accept();
+      });
+      await reloadFromPage(page);
+      expect(didTrigger).toBe(true);
+      await expect(count).toHaveText('0');
+      await toggleDirty.click();
+
+      // dirty SPA nav
+      await link.click();
+      await expect(count).toHaveText('1');
+      await link.click();
+      await expect(count).toHaveText('2');
+      expect(new URL(page.url()).pathname).toBe('/qwikrouter-test/prevent-navigate/');
+      await expect(confirmText).toContainText('/qwikrouter-test/?');
+      await itemLink.click();
+      await expect(confirmText).toContainText('/qwikrouter-test/prevent-navigate/5/?');
+      await confirmYes.click();
+      await expect(page.locator('#pn-main')).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe('/qwikrouter-test/prevent-navigate/5/');
+
+      // dirty browser nav w/ prevent
+      await toggleDirty.click();
+      didTrigger = false;
+      page.once('dialog', async (dialog) => {
+        didTrigger = true;
+        expect(dialog.type()).toBe('beforeunload');
+        // dismissing doesn't work, ah well
+        await dialog.accept();
+      });
+      await mpaLink.click();
+      expect(didTrigger).toBe(true);
+    });
+
+    test('second nav() call should win when two are fired back-to-back', async ({ page }) => {
+      await page.goto('/qwikrouter-test/double-nav/a/');
+      await expect(page.locator('#double-nav-a')).toBeVisible();
+
+      const btn = page.locator('#double-nav-btn');
+      await btn.click();
+
+      // Should end up at C (the second nav call), not B
+      await expect(page.locator('#double-nav-c')).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe('/qwikrouter-test/double-nav/c/');
+      await expect(page.locator('#double-nav-c-data')).toHaveText('data-c');
+    });
+
+    test('second nav() call should win while the first waits for render', async ({ page }) => {
+      await page.goto('/qwikrouter-test/double-nav/a/');
+      await expect(page.locator('#double-nav-a')).toBeVisible();
+
+      await page.locator('#double-nav-render-btn').click();
+
+      await expect(page.locator('#double-nav-c')).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe('/qwikrouter-test/double-nav/c/');
+      await expect(page.locator('#double-nav-c-data')).toHaveText('data-c');
+    });
+
+    test('loader redirect via query string should SPA navigate to target', async ({ page }) => {
+      await page.goto('/qwikrouter-test/loader-redirect/');
+      await expect(page.locator('#loader-redirect-home')).toBeVisible();
+
+      const btn = page.locator('#loader-redirect-btn');
+      await btn.click();
+
+      // Should end up at the redirect target, not the source route.
+      // The redirect involves a network roundtrip (loader fetch sees a 302) plus
+      // two sequential SPA navigations (source → target). The DOM update may lag
+      // the history pushState, so wait directly for the target element.
+      await expect(page.locator('#loader-redirect-target')).toBeVisible({ timeout: 15000 });
+      await expect(page.locator('#loader-redirect-target-data')).toHaveText('target-data');
+      expect(new URL(page.url()).searchParams.get('done')).toBe('true');
+      // Old content must be gone — the redirect should replace, not append.
+      await expect(page.locator('#loader-redirect-home')).not.toBeVisible();
+      await expect(page.locator('#loader-redirect-source')).not.toBeVisible();
+    });
+  }
+
+  function tests() {
+    test.describe('issue2829', () => {
+      test('should navigate with context', async ({ page }) => {
+        await page.goto('/qwikrouter-test/issue2829/a/');
+        const link = page.locator('#issue2829-link');
+        await link.click();
+
+        await expect(page.locator('h1')).toHaveText('Profile');
+        await expect(page.locator('#issue2829-context')).toHaveText('context: __CONTEXT_VALUE__');
+        expect(new URL(page.url()).pathname).toBe('/qwikrouter-test/issue2829/b/');
+      });
+    });
+
+    test.describe('issue2890', () => {
+      test('should navigate (link 0)', async ({ page, javaScriptEnabled }) => {
+        await page.goto('/qwikrouter-test/issue2890/a/');
+        const link = page.locator('#issue2890-link-0');
+        await link.click();
+
+        await expect(page.locator('h1')).toHaveText('Query');
+        await expect(page).toHaveURL('/qwikrouter-test/issue2890/b/');
+        await expect(page.locator('#loader')).toHaveText('LOADER: {"query":"NONE","hash":"NONE"}');
+        if (javaScriptEnabled) {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {"query":"NONE","hash":""}');
+        } else {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {}');
+        }
+      });
+
+      test('should navigate (link 1)', async ({ page, javaScriptEnabled }) => {
+        await page.goto('/qwikrouter-test/issue2890/a/');
+        const link = page.locator('#issue2890-link-1');
+        await link.click();
+
+        await expect(page.locator('h1')).toHaveText('Query');
+        await expect(page).toHaveURL('/qwikrouter-test/issue2890/b/?query=123');
+        await expect(page.locator('#loader')).toHaveText('LOADER: {"query":"123","hash":"NONE"}');
+        if (javaScriptEnabled) {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {"query":"123","hash":""}');
+        } else {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {}');
+        }
+      });
+      test('should navigate (link 2)', async ({ page, javaScriptEnabled }) => {
+        await page.goto('/qwikrouter-test/issue2890/a/');
+        const link = page.locator('#issue2890-link-2');
+        await link.click();
+
+        await expect(page.locator('h1')).toHaveText('Query');
+        await expect(page).toHaveURL('/qwikrouter-test/issue2890/b/?query=321');
+        await expect(page.locator('#loader')).toHaveText('LOADER: {"query":"321","hash":"NONE"}');
+        if (javaScriptEnabled) {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {"query":"321","hash":""}');
+        } else {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {}');
+        }
+      });
+      test('should navigate (link 3)', async ({ page, javaScriptEnabled }) => {
+        await page.goto('/qwikrouter-test/issue2890/a/');
+        const link = page.locator('#issue2890-link-3');
+        await link.click();
+
+        await expect(page.locator('h1')).toHaveText('Query');
+        await expect(page).toHaveURL('/qwikrouter-test/issue2890/b/?query=321&hash=true#h2');
+        await expect(page.locator('#loader')).toHaveText('LOADER: {"query":"321","hash":"true"}');
+        if (javaScriptEnabled) {
+          await expect(page.locator('#browser')).toHaveText(
+            'BROWSER: {"query":"321","hash":"#h2"}'
+          );
+        } else {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {}');
+        }
+      });
+      test('should navigate (link 4)', async ({ page, javaScriptEnabled }) => {
+        await page.goto('/qwikrouter-test/issue2890/a/');
+        const link = page.locator('#issue2890-link-4');
+        await link.click();
+
+        await expect(page.locator('h1')).toHaveText('Query');
+        await expect(page).toHaveURL('/qwikrouter-test/issue2890/b/?query=321&hash=true#h2');
+        await expect(page.locator('#loader')).toHaveText('LOADER: {"query":"321","hash":"true"}');
+        if (javaScriptEnabled) {
+          await expect(page.locator('#browser')).toHaveText(
+            'BROWSER: {"query":"321","hash":"#h2"}'
+          );
+        } else {
+          await expect(page.locator('#browser')).toHaveText('BROWSER: {}');
+        }
+      });
+    });
+
+    test.describe('issue 2751', () => {
+      test('should navigate without crash', async ({ context, javaScriptEnabled }) => {
+        const ctx = await load(context, javaScriptEnabled, '/qwikrouter-test/actions/');
+
+        await linkNavigate(ctx, '[data-test-link="docs-home"]');
+        await assertPage(ctx, {
+          pathname: '/qwikrouter-test/docs/',
+          title: 'Docs: Welcome! - Qwik',
+          layoutHierarchy: ['docs'],
+          h1: 'Welcome to the Docs!',
+        });
+
+        await linkNavigate(ctx, '[data-test-link="docs-actions"]');
+        await assertPage(ctx, {
+          pathname: '/qwikrouter-test/actions/',
+          title: 'Actions - Qwik',
+          layoutHierarchy: ['root'],
+          h1: 'Actions Test',
+        });
+
+        await linkNavigate(ctx, '[data-test-link="api-home"]');
+        await assertPage(ctx, {
+          pathname: '/qwikrouter-test/api/',
+          title: 'API: /qwikrouter-test/api/ - Qwik',
+          layoutHierarchy: ['root', 'api'],
+          h1: 'Qwik Router Test API!',
+        });
+      });
+    });
+
+    test('issue4502 (anchor)', async ({ page }) => {
+      await page.goto('/qwikrouter-test/issue4502/');
+      await page.locator('#anchor').click();
+      await page.waitForURL('/qwikrouter-test/issue4502/broken/route/');
+      await expect(page.locator('#route')).toHaveText('welcome to /broken/route');
+    });
+
+    test('issue4956', async ({ page }) => {
+      await page.goto('/qwikrouter-test/issue4956?id=1');
+      const textContent = page.locator('#routeId');
+
+      await expect(textContent).toHaveText('1');
+    });
+
+    test('issue4531', async ({ page }) => {
+      const res = await page.goto('/qwikrouter-test/issue4531/');
+      await expect(page.locator('#route')).toHaveText('should render');
+      expect(await res?.headerValue('X-Qwikrouter-Test')).toEqual('issue4531');
+    });
+
+    test('issue4792', async ({ page }) => {
+      const site = '/qwikrouter-test/issue4792/';
+      await page.goto(site);
+      const href = page.locator('#reload');
+      await expect(href).toHaveAttribute('href', site);
+    });
+
+    test('issue7182', async ({ page, javaScriptEnabled }) => {
+      await page.goto('/qwikrouter-test/issue7182');
+      const input1 = page.locator('#input1');
+      await input1.fill('4');
+      await input1.dispatchEvent('change');
+      const input2 = page.locator('#input2');
+      await input2.fill('4');
+      await input2.dispatchEvent('change');
+      const result = page.locator('#result');
+      if (javaScriptEnabled) {
+        await expect(result).toHaveText('8');
+      } else {
+        await expect(result).toHaveText('3');
+      }
+    });
+    test('issue7732 link/useNavigate with query params should not override loader/middleware redirect with query params', async ({
+      page,
+    }) => {
+      await page.goto('/qwikrouter-test/issue7732/a/');
+      const link = page.locator('#issue7732-link-b');
+      await link.click();
+      await expect(page).toHaveURL('/qwikrouter-test/issue7732/c/?redirected=true');
+    });
+    test('action with redirect without query params in a route with query param should redirect to route without query params', async ({
+      page,
+    }) => {
+      await page.goto('/qwikrouter-test/action-redirect-without-search-params/?test=test');
+      const button = page.locator('button');
+      await button.click();
+      await page.waitForURL('/qwikrouter-test/action-redirect-without-search-params-target/');
+      const searchParams = new URL(page.url()).searchParams;
+      expect(searchParams.size).toBe(0);
+    });
+    test('media in home page', async ({ page }) => {
+      await page.goto('/qwikrouter-test/');
+
+      await expectLoadedImage(page.locator('#image-jpeg'), 520, 520);
+
+      await expect(page.locator('#image-jpeg')).toHaveAttribute('loading', 'eager');
+      await expect(page.locator('#image-jpeg')).toHaveAttribute('decoding', 'auto');
+
+      await expect(page.locator('#image-avif')).toHaveAttribute('width', '100');
+      await expect(page.locator('#image-avif')).toHaveAttribute('height', '100');
+      await expectLoadedImage(page.locator('#image-avif'), 520, 520);
+    });
+
+    test('redirects, re-runs loaders and changes the url within the same page when search params changed', async ({
+      page,
+    }) => {
+      await page.goto('/qwikrouter-test/search-params-redirect/');
+      await page.getByText('Submit').click();
+      await page.waitForURL('**/qwikrouter-test/search-params-redirect/?redirected=true');
+
+      const url = new URL(page.url());
+
+      expect(url.href.replace(url.origin, '')).toEqual(
+        '/qwikrouter-test/search-params-redirect/?redirected=true'
+      );
+
+      await expect(page.locator('#redirected-result')).toHaveText('true');
+    });
+
+    test('should not execute task from removed layout, and should be executed only once for SPA', async ({
+      page,
+      javaScriptEnabled,
+    }) => {
+      let logCounter = 0;
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+          expect(msg.text()).toEqual(undefined);
+        } else if (msg.type() === 'log') {
+          if (msg.text().includes('location path id')) {
+            logCounter++;
+          }
+        }
+      });
+      await page.goto('/qwikrouter-test/location-path');
+      await expect(page.locator('h1')).toHaveText('Location Path Root');
+      await expect(page).toHaveURL('/qwikrouter-test/location-path/');
+      await page.locator('#location-path-link').click();
+      await expect(page.locator('h1')).toHaveText('Location Path id');
+      await expect(page).toHaveURL('/qwikrouter-test/location-path/1/');
+      await page.locator('#location-path-link-root').click();
+      await expect(page.locator('h1')).toHaveText('Location Path Root');
+      await expect(page).toHaveURL('/qwikrouter-test/location-path/');
+      if (javaScriptEnabled) {
+        // should log on browser only in CSR
+        expect(logCounter).toBe(1);
+      } else {
+        // should not log in MPA, it is executed on server
+        expect(logCounter).toBe(0);
+      }
+    });
+  }
+});

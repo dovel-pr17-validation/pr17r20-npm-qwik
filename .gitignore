@@ -1,0 +1,58 @@
+# Keep "OS" and "IDE and local environment" ignores on your local machine in user home
+# git config --global core.excludesFile ~/.gitignore
+# https://git-scm.com/docs/gitignore
+
+# OS
+**/.DS_Store
+etc
+temp
+.history
+.lh
+*.
+**/*.log
+*.node
+
+# Node
+node_modules
+
+# Artifacts
+tsc-out
+dist
+/dist-dev
+external
+lib
+tsdoc-metadata.json
+/target
+
+# IDE and local environment
+.idea
+.eslintcache
+test-results
+.direnv
+
+# Package Managers
+.yarn/*
+!.yarn/releases
+.pnpm-store/*
+
+# Local Netlify folder
+.netlify
+sandbox
+
+# AI tools
+.planning
+# Generated agent skills are regenerated locally via `ruler apply`, not committed (only .ruler/ source
+# and the root AGENTS.md/CLAUDE.md are). Keeps skill/note edits from tripling every PR diff.
+/.claude
+/.codex
+/.cursor
+/AGENTS.md.bak
+/CLAUDE.md.bak
+
+# We need to ignore this because "changesets" will try to replace it
+/CHANGELOG.md
+
+# Vitest coverage
+packages/coverage/*
+visualizer.html
+**/lib-types/**/*

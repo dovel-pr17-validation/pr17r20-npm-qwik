@@ -1,0 +1,10667 @@
+---
+title: \@qwik.dev/core API Reference
+---
+
+# [API](/api) &rsaquo; @qwik.dev/core
+
+<h2 id="componentbaseprops-_q_slot_">"q:slot"</h2>
+
+```typescript
+'q:slot'?: string;
+```
+
+<h2 id="svgattributes-_xlink_actuate_">"xlink:actuate"</h2>
+
+```typescript
+'xlink:actuate'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xlink_arcrole_">"xlink:arcrole"</h2>
+
+```typescript
+'xlink:arcrole'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xlink_href_">"xlink:href"</h2>
+
+```typescript
+'xlink:href'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xlink_role_">"xlink:role"</h2>
+
+```typescript
+'xlink:role'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xlink_show_">"xlink:show"</h2>
+
+```typescript
+'xlink:show'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xlink_title_">"xlink:title"</h2>
+
+```typescript
+'xlink:title'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xlink_type_">"xlink:type"</h2>
+
+```typescript
+'xlink:type'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xml_base_">"xml:base"</h2>
+
+```typescript
+'xml:base'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xml_lang_">"xml:lang"</h2>
+
+```typescript
+'xml:lang'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xml_space_">"xml:space"</h2>
+
+```typescript
+'xml:space'?: string | undefined;
+```
+
+<h2 id="svgattributes-_xmlns_xlink_">"xmlns:xlink"</h2>
+
+```typescript
+'xmlns:xlink'?: string | undefined;
+```
+
+<h2 id="_">$</h2>
+
+Qwik Optimizer marker function.
+
+Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable resource referenced by `QRL`.
+
+```typescript
+$: <T>(expression: T) => QRL<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+expression
+
+</td><td>
+
+T
+
+</td><td>
+
+Expression which should be lazy loaded
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[QRL](#qrl-type-alias)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.public.ts)
+
+<h2 id="computedsignal-abort">abort</h2>
+
+Abort the current computation and run cleanups if needed.
+
+```typescript
+abort(reason?: any): void;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+reason
+
+</td><td>
+
+any
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+<h2 id="asyncfn">AsyncFn</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `ComputedFn` instead.
+
+```typescript
+export type AsyncFn<T> = ComputedFn<T>;
+```
+
+**References:** [ComputedFn](#computedfn)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-computed.ts)
+
+<h2 id="asyncsignal">AsyncSignal</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `ComputedSignal` instead, it has async support now.
+
+An AsyncSignal holds the result of the given async function. If the function uses `track()` to track reactive state, and that state changes, the AsyncSignal is recalculated, and if the result changed, all tasks which are tracking the AsyncSignal will be re-run and all subscribers (components, tasks etc) that read the AsyncSignal will be updated.
+
+If the value has not yet been resolved, reading the AsyncSignal will throw a Promise, which will retry the component or task once the value resolves.
+
+If the value has been resolved, but the async function is re-running, reading the AsyncSignal will subscribe to it and return the last resolved value until the new value is ready. As soon as the new value is ready, the subscribers will be updated.
+
+If the async function threw an error, reading the `.value` will throw that same error.
+
+```typescript
+export type AsyncSignal<T = unknown> = ComputedSignal<T>;
+```
+
+**References:** [ComputedSignal](#computedsignal)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/signal.public.ts)
+
+<h2 id="asyncsignaloptions">AsyncSignalOptions</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `ComputedOptions` instead.
+
+```typescript
+export type AsyncSignalOptions<T> = ComputedOptions<T>;
+```
+
+**References:** [ComputedOptions](#computedoptions)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/types.ts)
+
+<h2 id="resourcectx-cache">cache</h2>
+
+> Warning: This API is now obsolete.
+>
+> Does not do anything
+
+```typescript
+cache(policyOrMilliseconds: number | 'immutable'): void;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+policyOrMilliseconds
+
+</td><td>
+
+number \| 'immutable'
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+<h2 id="catch">Catch</h2>
+
+Renders `fallback$` instead of its children when a descendant throws.
+
+```typescript
+Catch: Component<CatchProps>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/error/catch.ts)
+
+<h2 id="catchinfo">CatchInfo</h2>
+
+Structured metadata about a caught error, passed to `onError$`.
+
+```typescript
+export interface CatchInfo
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+boundaryId
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+Identifies the boundary within the page. Allocated in render order and kept across a resume, so every report from one boundary shares it — but it shifts when render order changes.
+
+</td></tr>
+<tr><td>
+
+digest
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+The code a production fallback shows for a server-origin error, so a user's bug report matches your logs. An error caught during SSR reports a second, different digest if the client re-derives it — the stacks differ.
+
+</td></tr>
+<tr><td>
+
+phase
+
+</td><td>
+
+</td><td>
+
+[CatchPhase](#catchphase)
+
+</td><td>
+
+Where the caught error originated.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/error/error-handling.ts)
+
+<h2 id="catchphase">CatchPhase</h2>
+
+Identifies where an error caught by an error boundary originated.
+
+```typescript
+export declare const enum CatchPhase
+```
+
+<table><thead><tr><th>
+
+Member
+
+</th><th>
+
+Value
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+Event
+
+</td><td>
+
+`"event"`
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+Hook
+
+</td><td>
+
+`"hook"`
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+Render
+
+</td><td>
+
+`"render"`
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/error/catch-phase.ts)
+
+<h2 id="catchprops">CatchProps</h2>
+
+```typescript
+export interface CatchProps
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+fallback$
+
+</td><td>
+
+</td><td>
+
+[QRL](#qrl-type-alias)&lt;(error: Error &amp; \{ digest?: string; }, reset: [QRL](#qrl-type-alias)&lt;() =&gt; void&gt;) =&gt; [JSXOutput](#jsxoutput)&gt;
+
+</td><td>
+
+Rendered when a descendant throws. The error is always an `Error`, so `{error.message}` is safe: a non-Error throw is wrapped, and production redacts server-origin errors to a generic message plus `digest`. Client-origin errors render as thrown — their messages already live in the browser bundle.
+
+Wrap `reset` in a handler — `onClick$={() => reset()}`, not `onClick$={reset}` — so it stays wired in a streamed fallback.
+
+</td></tr>
+<tr><td>
+
+onError$?
+
+</td><td>
+
+</td><td>
+
+[QRL](#qrl-type-alias)&lt;(error: Error, info: [CatchInfo](#catchinfo)) =&gt; void&gt;
+
+</td><td>
+
+_(Optional)_ Side effect only; never affects rendering. Receives the original `Error` — a non-Error throw arrives wrapped, with `cause` set to the raw value.
+
+An error caught during SSR fires again when the client re-derives it, so dedupe in your reporter.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/error/catch.ts)
+
+<h2 id="classlist">ClassList</h2>
+
+A class list can be a string, a boolean, an array, or an object.
+
+If it's an array, each item is a class list and they are all added.
+
+If it's an object, then the keys are class name strings, and the values are booleans that determine if the class name string should be added or not.
+
+```typescript
+export type ClassList =
+  | string
+  | undefined
+  | null
+  | false
+  | Record<string, boolean | string | number | null | undefined>
+  | ClassList[];
+```
+
+**References:** [ClassList](#classlist)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="renderresult-cleanup">cleanup</h2>
+
+```typescript
+cleanup(): void;
+```
+
+**Returns:**
+
+void
+
+<h2 id="computedsignal-clear">clear</h2>
+
+Clear the value and recompute. Unlike `invalidate()`, readers see the loading state (reads throw the computation promise) instead of the stale value while the new value computes.
+
+```typescript
+clear(): void;
+```
+
+**Returns:**
+
+void
+
+<h2 id="component">Component</h2>
+
+Type representing the Qwik component.
+
+`Component` is the type returned by invoking `component$`.
+
+```tsx
+interface MyComponentProps {
+  someProp: string;
+}
+const MyComponent: Component<MyComponentProps> = component$(
+  (props: MyComponentProps) => {
+    return <span>{props.someProp}</span>;
+  },
+);
+```
+
+```typescript
+export type Component<PROPS = unknown> = FunctionComponent<PublicProps<PROPS>>;
+```
+
+**References:** [FunctionComponent](#functioncomponent), [PublicProps](#publicprops)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/component.public.ts)
+
+<h2 id="component_">component$</h2>
+
+Declare a Qwik component that can be used to create UI.
+
+Use `component$` to declare a Qwik component. A Qwik component is a special kind of component that allows the Qwik framework to lazy load and execute the component independently of other Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
+
+Side note: You can also declare regular (standard JSX) components that will have standard synchronous behavior.
+
+Qwik component is a facade that describes how the component should be used without forcing the implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
+
+### Example
+
+An example showing how to create a counter component:
+
+```tsx
+export interface CounterProps {
+  initialValue?: number;
+  step?: number;
+}
+export const Counter = component$((props: CounterProps) => {
+  const state = useSignal(props.initialValue || 0);
+  return (
+    <div>
+      <span>{state.value}</span>
+      <button onClick$={() => (state.value += props.step || 1)}>+</button>
+    </div>
+  );
+});
+```
+
+- `component$` is how a component gets declared. - `{ value?: number; step?: number }` declares the public (props) interface of the component. - `{ count: number }` declares the private (state) interface of the component.
+
+The above can then be used like so:
+
+```tsx
+export const OtherComponent = component$(() => {
+  return <Counter initialValue={100} />;
+});
+```
+
+See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`, `useOnWindow`, `useStyles`
+
+```typescript
+component$: <PROPS = unknown>(onMount: OnRenderFn<PROPS>) => Component<PROPS>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+onMount
+
+</td><td>
+
+[OnRenderFn](#onrenderfn)&lt;PROPS&gt;
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[Component](#component)&lt;PROPS&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/component.public.ts)
+
+<h2 id="componentbaseprops">ComponentBaseProps</h2>
+
+```typescript
+export interface ComponentBaseProps
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+["q:slot"?](#componentbaseprops-_q_slot_)
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+key?
+
+</td><td>
+
+</td><td>
+
+string \| number \| null \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="computedfn">ComputedFn</h2>
+
+The compute function. The context provides `track()`, `previous` (the last computed value), `info` (the argument of the `invalidate(info)` call that triggered this computation), `cleanup()` and `abortSignal`. Synchronous reactive state reads are tracked automatically, use `untrack()` to read signals without tracking. Return a `Promise` (or use an `async` function) for async values. After the first `await`, reads are no longer tracked automatically and must use `track()`.
+
+```typescript
+export type ComputedFn<T> = (ctx: ComputeCtx) => ValueOrPromise<T>;
+```
+
+**References:** [ValueOrPromise](#valueorpromise)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-computed.ts)
+
+<h2 id="computedoptions">ComputedOptions</h2>
+
+```typescript
+export interface ComputedOptions<T = unknown>
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+clientOnly?
+
+</td><td>
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_ When true, the async computation is postponed to the browser. On SSR, the signal remains INVALID and does not execute the function. On the client, it will compute on first read.
+
+Defaults to `false`.
+
+</td></tr>
+<tr><td>
+
+concurrency?
+
+</td><td>
+
+</td><td>
+
+number
+
+</td><td>
+
+_(Optional)_ Maximum number of concurrent computations. Use `0` for unlimited.
+
+Defaults to `1`.
+
+</td></tr>
+<tr><td>
+
+container?
+
+</td><td>
+
+</td><td>
+
+Container
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+eagerCleanup?
+
+</td><td>
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_ When subscribers drop to 0, run cleanup in the next tick, instead of waiting for the function inputs to change.
+
+Defaults to `false`, meaning cleanup happens only when inputs change.
+
+</td></tr>
+<tr><td>
+
+initial?
+
+</td><td>
+
+</td><td>
+
+Awaited&lt;T&gt; \| (() =&gt; Awaited&lt;T&gt;)
+
+</td><td>
+
+_(Optional)_ Like useSignal's `initial`; prevents the throw on first read when uninitialized
+
+</td></tr>
+<tr><td>
+
+serializationStrategy?
+
+</td><td>
+
+</td><td>
+
+[SerializationStrategy](#serializationstrategy)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+timeout?
+
+</td><td>
+
+</td><td>
+
+number
+
+</td><td>
+
+_(Optional)_ Maximum time in milliseconds to wait for the async computation to complete. If exceeded, the computation is aborted and an error is thrown.
+
+If `0`, no timeout is applied.
+
+Defaults to `0`.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/types.ts)
+
+<h2 id="computedreturntype">ComputedReturnType</h2>
+
+```typescript
+export type ComputedReturnType<T> = ComputedSignal<Awaited<T>>;
+```
+
+**References:** [ComputedSignal](#computedsignal)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-computed.ts)
+
+<h2 id="computedsignal">ComputedSignal</h2>
+
+A computed signal is a signal which is calculated from other signals. When the signals change, the computed signal is recalculated, and if the result changed, all tasks which are tracking the signal will be re-run and all components that read the signal will be re-rendered.
+
+```typescript
+export interface ComputedSignal<T> extends Signal<T>
+```
+
+**Extends:** [Signal](#signal)&lt;T&gt;
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+error
+
+</td><td>
+
+</td><td>
+
+Error \| undefined
+
+</td><td>
+
+The computation error, if any. Reading it starts a lazy computation if needed. While set, reading `.value` throws the error.
+
+</td></tr>
+<tr><td>
+
+pending
+
+</td><td>
+
+</td><td>
+
+boolean
+
+</td><td>
+
+Whether the signal is currently loading. Reading it starts a lazy computation if needed.
+
+</td></tr>
+</tbody></table>
+
+<table><thead><tr><th>
+
+Method
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[abort(reason)](#computedsignal-abort)
+
+</td><td>
+
+Abort the current computation and run cleanups if needed.
+
+</td></tr>
+<tr><td>
+
+[clear()](#computedsignal-clear)
+
+</td><td>
+
+Clear the value and recompute. Unlike `invalidate()`, readers see the loading state (reads throw the computation promise) instead of the stale value while the new value computes.
+
+</td></tr>
+<tr><td>
+
+[force()](#computedsignal-force)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+[invalidate()](#computedsignal-invalidate)
+
+</td><td>
+
+Use this to force recalculation.
+
+</td></tr>
+<tr><td>
+
+invalidate(info)
+
+</td><td>
+
+Use this to force recalculation. If you pass `info`, it will be provided to the calculation function.
+
+</td></tr>
+<tr><td>
+
+[promise()](#computedsignal-promise)
+
+</td><td>
+
+A promise that resolves when the value is computed or rejected.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/signal.public.ts)
+
+<h2 id="contextid">ContextId</h2>
+
+ContextId is a typesafe ID for your context.
+
+Context is a way to pass stores to the child components without prop-drilling.
+
+Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable identifier for the context. It is not the context value itself. See `useContextProvider()` and `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can track context providers and consumers in a way that survives resumability.
+
+### Example
+
+```tsx
+// Declare the Context type.
+interface TodosStore {
+  items: string[];
+}
+// Create a Context ID (no data is saved here.)
+// You will use this ID to both create and retrieve the Context.
+export const TodosContext = createContextId<TodosStore>("Todos");
+
+// Example of providing context to child components.
+export const App = component$(() => {
+  useContextProvider(
+    TodosContext,
+    useStore<TodosStore>({
+      items: ["Learn Qwik", "Build Qwik app", "Profit"],
+    }),
+  );
+
+  return <Items />;
+});
+
+// Example of retrieving the context provided by a parent component.
+export const Items = component$(() => {
+  const todos = useContext(TodosContext);
+  return (
+    <ul>
+      {todos.items.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  );
+});
+```
+
+```typescript
+export interface ContextId<STATE>
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+\_\_brand_context_type\_\_
+
+</td><td>
+
+`readonly`
+
+</td><td>
+
+STATE
+
+</td><td>
+
+Design-time property to store type information for the context.
+
+</td></tr>
+<tr><td>
+
+id
+
+</td><td>
+
+`readonly`
+
+</td><td>
+
+string
+
+</td><td>
+
+A unique ID for the context.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-context.ts)
+
+<h2 id="coreplatform">CorePlatform</h2>
+
+Low-level API for platform abstraction.
+
+Different platforms (browser, node, service workers) may have different ways of handling things such as `requestAnimationFrame` and imports. To make Qwik platform-independent Qwik uses the `CorePlatform` API to access the platform API.
+
+`CorePlatform` also is responsible for importing symbols. The import map is different on the client (browser) then on the server. For this reason, the server has a manifest that is used to map symbols to javascript chunks. The manifest is encapsulated in `CorePlatform`, for this reason, the `CorePlatform` can't be global as there may be multiple applications running at server concurrently.
+
+This is a low-level API and there should not be a need for you to access this.
+
+```typescript
+export interface CorePlatform
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+chunkForSymbol
+
+</td><td>
+
+</td><td>
+
+(symbolName: string, chunk: string \| null, parent?: string) =&gt; readonly [symbol: string, chunk: string] \| undefined
+
+</td><td>
+
+Retrieve chunk name for the symbol.
+
+When the application is running on the server the symbols may be imported from different files (as server build is typically a single javascript chunk.) For this reason, it is necessary to convert the chunks from server format to client (browser) format. This is done by looking up symbols (which are globally unique) in the manifest. (Manifest is the mapping of symbols to the client chunk names.)
+
+</td></tr>
+<tr><td>
+
+importSymbol
+
+</td><td>
+
+</td><td>
+
+(containerEl: Element \| undefined, url: string \| URL \| undefined \| null, symbol: string) =&gt; [ValueOrPromise](#valueorpromise)&lt;unknown&gt;
+
+</td><td>
+
+Retrieve a symbol value from QRL.
+
+Qwik needs to lazy load data and closures. For this Qwik uses QRLs that are serializable references of resources that are needed. The QRLs contain all the information necessary to retrieve the reference using `importSymbol`.
+
+Why not use `import()`? Because `import()` is relative to the current file, and the current file is always the Qwik framework. So QRLs have additional information that allows them to serialize imports relative to application base rather than the Qwik framework file.
+
+</td></tr>
+<tr><td>
+
+isServer
+
+</td><td>
+
+</td><td>
+
+boolean
+
+</td><td>
+
+True of running on the server platform.
+
+</td></tr>
+<tr><td>
+
+raf
+
+</td><td>
+
+</td><td>
+
+(fn: () =&gt; any) =&gt; Promise&lt;any&gt;
+
+</td><td>
+
+Perform operation on next request-animation-frame.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/platform/types.ts)
+
+<h2 id="correctedtoggleevent">CorrectedToggleEvent</h2>
+
+This corrects the TS definition for ToggleEvent
+
+```typescript
+export interface CorrectedToggleEvent extends Event
+```
+
+**Extends:** Event
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+newState
+
+</td><td>
+
+`readonly`
+
+</td><td>
+
+'open' \| 'closed'
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+prevState
+
+</td><td>
+
+`readonly`
+
+</td><td>
+
+'open' \| 'closed'
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="createcomputed_">createComputed$</h2>
+
+Create a computed signal which is calculated from the given QRL. A computed signal is a signal which is calculated from other signals. When the signals change, the computed signal is recalculated.
+
+The QRL must be a function which returns the value of the signal. The function must not have side effects. Every synchronous signal or store read is tracked automatically; reads after the first `await` must use the `track()` provided on the context argument. When the function is async, reading an unresolved `.value` throws the computation promise, and reading a failed `.value` throws the error.
+
+```typescript
+createComputed$: <T>(
+  qrl: (ctx: ComputeCtx) => ValueOrPromise<T>,
+  options?: ComputedOptions<T>,
+) => ComputedReturnType<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+qrl
+
+</td><td>
+
+(ctx: ComputeCtx) =&gt; [ValueOrPromise](#valueorpromise)&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+options
+
+</td><td>
+
+[ComputedOptions](#computedoptions)&lt;T&gt;
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[ComputedReturnType](#computedreturntype)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/signal.public.ts)
+
+<h2 id="createcontextid">createContextId</h2>
+
+Create a context ID to be used in your application. The name should be written with no spaces.
+
+Context is a way to pass stores to the child components without prop-drilling.
+
+Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable identifier for the context. It is not the context value itself. See `useContextProvider()` and `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can track context providers and consumers in a way that survives resumability.
+
+### Example
+
+```tsx
+// Declare the Context type.
+interface TodosStore {
+  items: string[];
+}
+// Create a Context ID (no data is saved here.)
+// You will use this ID to both create and retrieve the Context.
+export const TodosContext = createContextId<TodosStore>("Todos");
+
+// Example of providing context to child components.
+export const App = component$(() => {
+  useContextProvider(
+    TodosContext,
+    useStore<TodosStore>({
+      items: ["Learn Qwik", "Build Qwik app", "Profit"],
+    }),
+  );
+
+  return <Items />;
+});
+
+// Example of retrieving the context provided by a parent component.
+export const Items = component$(() => {
+  const todos = useContext(TodosContext);
+  return (
+    <ul>
+      {todos.items.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  );
+});
+```
+
+```typescript
+createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+name
+
+</td><td>
+
+string
+
+</td><td>
+
+The name of the context.
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[ContextId](#contextid)&lt;STATE&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-context.ts)
+
+<h2 id="createserializer_">createSerializer$</h2>
+
+Create a signal that holds a custom serializable value. See [useSerializer$](#useserializer_) for more details.
+
+```typescript
+createSerializer$: <T, S>(arg: SerializerArg<T, S>) => T extends Promise<any> ? never : SerializerSignal<T>
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+arg
+
+</td><td>
+
+SerializerArg&lt;T, S&gt;
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+T extends Promise&lt;any&gt; ? never : SerializerSignal&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/signal.public.ts)
+
+<h2 id="createsignal">createSignal</h2>
+
+Creates a Signal with the given value. If no value is given, the signal is created with `undefined`.
+
+```typescript
+createSignal: {
+    <T>(): Signal<T | undefined>;
+    <T>(value: T): Signal<T>;
+}
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/signal.public.ts)
+
+<h2 id="cssproperties">CSSProperties</h2>
+
+```typescript
+export interface CSSProperties extends CSS.Properties<string | number>, CSS.PropertiesHyphen<string | number>
+```
+
+**Extends:** CSS.Properties&lt;string \| number&gt;, CSS.PropertiesHyphen&lt;string \| number&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-generated.ts)
+
+<h2 id="devjsx">DevJSX</h2>
+
+```typescript
+export interface DevJSX
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+columnNumber
+
+</td><td>
+
+</td><td>
+
+number
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+fileName
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+lineNumber
+
+</td><td>
+
+</td><td>
+
+number
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+stack?
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-node.ts)
+
+<h2 id="domattributes">DOMAttributes</h2>
+
+The Qwik-specific attributes that DOM elements accept
+
+```typescript
+export interface DOMAttributes<EL extends Element> extends DOMAttributesBase<EL>, QwikEvents<EL>
+```
+
+**Extends:** DOMAttributesBase&lt;EL&gt;, QwikEvents&lt;EL&gt;
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+class?
+
+</td><td>
+
+</td><td>
+
+[ClassList](#classlist) \| [Signal](#signal)&lt;[ClassList](#classlist)&gt; \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="each">Each</h2>
+
+```typescript
+Each: EachComponent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/each.ts)
+
+<h2 id="qwikjsx-element">Element</h2>
+
+```typescript
+type Element = JSXOutput;
+```
+
+**References:** [JSXOutput](#jsxoutput)
+
+<h2 id="qwikjsx-elementchildrenattribute">ElementChildrenAttribute</h2>
+
+```typescript
+interface ElementChildrenAttribute
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+children
+
+</td><td>
+
+</td><td>
+
+[JSXChildren](#jsxchildren)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+<h2 id="qwikjsx-elementtype">ElementType</h2>
+
+```typescript
+type ElementType = string | FunctionComponent<Record<any, any>>;
+```
+
+**References:** [FunctionComponent](#functioncomponent)
+
+<h2 id="catchphase-event">Event</h2>
+
+<h2 id="event_">event$</h2>
+
+```typescript
+event$: <T>(qrl: T) => import("./qrl.public").QRL<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+qrl
+
+</td><td>
+
+T
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+import("./qrl.public").[QRL](#qrl-type-alias)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.public.dollar.ts)
+
+<h2 id="eventhandler">EventHandler</h2>
+
+A DOM event handler
+
+```typescript
+export type EventHandler<EV = Event, EL = Element> = {
+  bivarianceHack(event: EV, element: EL): any;
+}["bivarianceHack"];
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="computedsignal-force">force</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `trigger()` instead
+
+```typescript
+force(): void;
+```
+
+**Returns:**
+
+void
+
+<h2 id="forcestoreeffects">forceStoreEffects</h2>
+
+Force a store to recompute and schedule effects.
+
+```typescript
+forceStoreEffects: (value: StoreTarget, prop: keyof StoreTarget) => void
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+value
+
+</td><td>
+
+StoreTarget
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+prop
+
+</td><td>
+
+keyof StoreTarget
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/impl/store.ts)
+
+<h2 id="fragment">Fragment</h2>
+
+```typescript
+Fragment: FunctionComponent<{
+  children?: any;
+  key?: string | number | null;
+}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/jsx-runtime.ts)
+
+<h2 id="functioncomponent">FunctionComponent</h2>
+
+Any function taking a props object that returns JSXOutput.
+
+The `key`, `flags` and `dev` parameters are for internal use.
+
+```typescript
+export type FunctionComponent<P = unknown> = {
+  renderFn(
+    props: P,
+    key: string | null,
+    flags: number,
+    dev?: DevJSX,
+  ): JSXOutput;
+}["renderFn"];
+```
+
+**References:** [DevJSX](#devjsx), [JSXOutput](#jsxoutput)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-node.ts)
+
+<h2 id="getclientmanifest">getClientManifest</h2>
+
+Returns the client build manifest, which includes the mappings from symbols to bundles, the bundlegraph etc.
+
+```typescript
+getClientManifest: () => ServerQwikManifest | undefined;
+```
+
+**Returns:**
+
+ServerQwikManifest \| undefined
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/get-client-manifest.ts)
+
+<h2 id="getdomcontainer">getDomContainer</h2>
+
+```typescript
+export declare function getDomContainer(element: Element): IClientContainer;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+element
+
+</td><td>
+
+Element
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+IClientContainer
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/client/dom-container.ts)
+
+<h2 id="getlocale">getLocale</h2>
+
+Retrieve the current locale.
+
+If no current locale and there is no `defaultLocale` the function throws an error.
+
+```typescript
+export declare function getLocale(defaultLocale?: string): string;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+defaultLocale
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+string
+
+The locale.
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-locale.ts)
+
+<h2 id="getplatform">getPlatform</h2>
+
+Retrieve the `CorePlatform`.
+
+The `CorePlatform` is also responsible for retrieving the Manifest, that contains mappings from symbols to javascript import chunks. For this reason, `CorePlatform` can't be global, but is specific to the application currently running. On server it is possible that many different applications are running in a single server instance, and for this reason the `CorePlatform` is associated with the application document.
+
+```typescript
+getPlatform: () => CorePlatform;
+```
+
+**Returns:**
+
+[CorePlatform](#coreplatform)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/platform/platform.ts)
+
+<h2 id="h">h</h2>
+
+The legacy transform, used by some JSX transpilers. The optimizer normally replaces this with optimized calls, with the same caveat as `jsx()`.
+
+```typescript
+export declare function h<
+  TYPE extends string | FunctionComponent<PROPS>,
+  PROPS extends {} = {},
+>(type: TYPE, props?: PROPS | null, ...children: any[]): JSXNode<TYPE>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+type
+
+</td><td>
+
+TYPE
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+props
+
+</td><td>
+
+PROPS \| null
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+children
+
+</td><td>
+
+any[]
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[JSXNode](#jsxnode)&lt;TYPE&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/jsx-runtime.ts)
+
+<h2 id="catchphase-hook">Hook</h2>
+
+<h2 id="htmlelementattrs">HTMLElementAttrs</h2>
+
+```typescript
+export interface HTMLElementAttrs extends HTMLAttributesBase, FilterBase<HTMLElement>
+```
+
+**Extends:** HTMLAttributesBase, FilterBase&lt;HTMLElement&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-generated.ts)
+
+<h2 id="implicit_firstarg">implicit$FirstArg</h2>
+
+Create a `____$(...)` convenience method from `___(...)`.
+
+It is very common for functions to take a lazy-loadable resource as a first argument. For this reason, the Qwik Optimizer automatically extracts the first argument from any function which ends in `$`.
+
+This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer. The former is just a shorthand for the latter.
+
+For example, these function calls are equivalent:
+
+- `component$(() => {...})` is same as `component($(() => {...}))`
+
+```tsx
+export function myApi(callback: QRL<() => void>): void {
+  // ...
+}
+
+export const myApi$ = implicit$FirstArg(myApi);
+// type of myApi$: (callback: () => void): void
+
+// can be used as:
+myApi$(() => console.log("callback"));
+
+// will be transpiled to:
+// FILE: <current file>
+myApi(qrl("./chunk-abc.js", "callback"));
+
+// FILE: chunk-abc.js
+export const callback = () => console.log("callback");
+```
+
+```typescript
+implicit$FirstArg: <FIRST, REST extends any[], RET>(
+    fn: (qrl: QRL<FIRST>, ...rest: REST) => RET,
+  ) =>
+  (qrl: FIRST, ...rest: REST) =>
+    RET;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+fn
+
+</td><td>
+
+(qrl: [QRL](#qrl-type-alias)&lt;FIRST&gt;, ...rest: REST) =&gt; RET
+
+</td><td>
+
+A function that should have its first argument automatically `$`.
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+((qrl: FIRST, ...rest: REST) =&gt; RET)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/implicit_dollar.ts)
+
+<h2 id="inlinedqrl">inlinedQrl</h2>
+
+Create an inlined QRL. This is mostly useful on the server side for serialization.
+
+```typescript
+inlinedQrl: <T>(
+  symbol: T | null,
+  symbolName: string,
+  lexicalScopeCapture?: Readonly<unknown[]>,
+) => QRL<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+symbol
+
+</td><td>
+
+T \| null
+
+</td><td>
+
+The object/function to register, or `null` to retrieve a previously registered one by hash
+
+</td></tr>
+<tr><td>
+
+symbolName
+
+</td><td>
+
+string
+
+</td><td>
+
+The name of the symbol.
+
+</td></tr>
+<tr><td>
+
+lexicalScopeCapture
+
+</td><td>
+
+Readonly&lt;unknown[]&gt;
+
+</td><td>
+
+_(Optional)_ A set of lexically scoped variables to capture.
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[QRL](#qrl-type-alias)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.ts)
+
+<h2 id="qwikjsx-intrinsicattributes">IntrinsicAttributes</h2>
+
+```typescript
+interface IntrinsicAttributes extends QwikIntrinsicAttributes
+```
+
+**Extends:** QwikIntrinsicAttributes
+
+<h2 id="qwikjsx-intrinsicelements">IntrinsicElements</h2>
+
+```typescript
+interface IntrinsicElements extends LenientQwikElements
+```
+
+**Extends:** LenientQwikElements
+
+<h2 id="computedsignal-invalidate">invalidate</h2>
+
+Use this to force recalculation.
+
+```typescript
+invalidate(): void;
+```
+
+**Returns:**
+
+void
+
+<h2 id="issignal">isSignal</h2>
+
+```typescript
+isSignal: (value: any) => value is Signal<unknown>
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+value
+
+</td><td>
+
+any
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+value is [Signal](#signal)&lt;unknown&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/utils.ts)
+
+<h2 id="jsx">jsx</h2>
+
+Used by the JSX transpilers to create a JSXNode. Note that the optimizer will normally not use this, instead using \_jsxSplit and \_jsxSorted directly.
+
+The optimizer will also replace all `jsx()` calls with the more optimized versions.
+
+The exception is when the props are not a literal object, which can only happen when the `jsx` call is written directly.
+
+```typescript
+jsx: <T extends string | FunctionComponent<any>>(
+  type: T,
+  props: T extends FunctionComponent<infer PROPS> ? PROPS : Props,
+  key?: string | number | null,
+  _isStatic?: boolean,
+  dev?: JsxDevOpts,
+) => JSXNode<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+type
+
+</td><td>
+
+T
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+props
+
+</td><td>
+
+T extends [FunctionComponent](#functioncomponent)&lt;infer PROPS&gt; ? PROPS : Props
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+key
+
+</td><td>
+
+string \| number \| null
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+\_isStatic
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+dev
+
+</td><td>
+
+JsxDevOpts
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[JSXNode](#jsxnode)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/jsx-runtime.ts)
+
+<h2 id="jsxchildren">JSXChildren</h2>
+
+```typescript
+export type JSXChildren =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Function
+  | RegExp
+  | JSXChildren[]
+  | Promise<JSXChildren>
+  | Signal<JSXChildren>
+  | JSXNode;
+```
+
+**References:** [JSXChildren](#jsxchildren), [Signal](#signal), [JSXNode](#jsxnode)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="jsxdev">jsxDEV</h2>
+
+Alias of `jsx` for development purposes.
+
+```typescript
+jsxDEV: <T extends string | FunctionComponent<any>>(
+  type: T,
+  props: T extends FunctionComponent<infer PROPS> ? PROPS : Props,
+  key?: string | number | null,
+  _isStatic?: boolean,
+  dev?: JsxDevOpts,
+) => JSXNode<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+type
+
+</td><td>
+
+T
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+props
+
+</td><td>
+
+T extends [FunctionComponent](#functioncomponent)&lt;infer PROPS&gt; ? PROPS : Props
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+key
+
+</td><td>
+
+string \| number \| null
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+\_isStatic
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+dev
+
+</td><td>
+
+JsxDevOpts
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[JSXNode](#jsxnode)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/jsx-runtime.ts)
+
+<h2 id="jsxnode">JSXNode</h2>
+
+A JSX Node, an internal structure. You probably want to use `JSXOutput` instead.
+
+```typescript
+export interface JSXNode<T extends string | FunctionComponent | unknown = unknown>
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+children
+
+</td><td>
+
+</td><td>
+
+[JSXChildren](#jsxchildren) \| null
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+dev?
+
+</td><td>
+
+</td><td>
+
+[DevJSX](#devjsx)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+key
+
+</td><td>
+
+</td><td>
+
+string \| null
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+props
+
+</td><td>
+
+</td><td>
+
+T extends [FunctionComponent](#functioncomponent)&lt;infer P&gt; ? P : Record&lt;any, unknown&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+type
+
+</td><td>
+
+</td><td>
+
+T
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-node.ts)
+
+<h2 id="jsxoutput">JSXOutput</h2>
+
+Any valid output for a component
+
+```typescript
+export type JSXOutput =
+  | JSXNode
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | JSXOutput[];
+```
+
+**References:** [JSXNode](#jsxnode), [JSXOutput](#jsxoutput)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-node.ts)
+
+<h2 id="jsxs">jsxs</h2>
+
+Alias of `jsx` to support JSX syntax.
+
+```typescript
+jsxs: <T extends string | FunctionComponent<any>>(
+  type: T,
+  props: T extends FunctionComponent<infer PROPS> ? PROPS : Props,
+  key?: string | number | null,
+  _isStatic?: boolean,
+  dev?: JsxDevOpts,
+) => JSXNode<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+type
+
+</td><td>
+
+T
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+props
+
+</td><td>
+
+T extends [FunctionComponent](#functioncomponent)&lt;infer PROPS&gt; ? PROPS : Props
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+key
+
+</td><td>
+
+string \| number \| null
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+\_isStatic
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+dev
+
+</td><td>
+
+JsxDevOpts
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[JSXNode](#jsxnode)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/jsx-runtime.ts)
+
+<h2 id="jsxtagname">JSXTagName</h2>
+
+```typescript
+export type JSXTagName =
+  | keyof HTMLElementTagNameMap
+  | Omit<string, keyof HTMLElementTagNameMap>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="knowneventnames">KnownEventNames</h2>
+
+The names of events that Qwik knows about. They are all lowercase, but on the JSX side, they are PascalCase for nicer DX. (`onAuxClick$` vs `onauxclick$`)
+
+```typescript
+export type KnownEventNames = LiteralUnion<AllEventKeys, string>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativeanimationevent">NativeAnimationEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `AnimationEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeAnimationEvent = AnimationEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativeclipboardevent">NativeClipboardEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `ClipboardEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeClipboardEvent = ClipboardEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativecompositionevent">NativeCompositionEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `CompositionEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeCompositionEvent = CompositionEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativedragevent">NativeDragEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `DragEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeDragEvent = DragEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativefocusevent">NativeFocusEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `FocusEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeFocusEvent = FocusEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativekeyboardevent">NativeKeyboardEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `KeyboardEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeKeyboardEvent = KeyboardEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativemouseevent">NativeMouseEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `MouseEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeMouseEvent = MouseEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativepointerevent">NativePointerEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `PointerEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativePointerEvent = PointerEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativetouchevent">NativeTouchEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `TouchEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeTouchEvent = TouchEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativetransitionevent">NativeTransitionEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `TransitionEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeTransitionEvent = TransitionEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativeuievent">NativeUIEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `UIEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeUIEvent = UIEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="nativewheelevent">NativeWheelEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `WheelEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type NativeWheelEvent = WheelEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="noserialize-function">noSerialize</h2>
+
+Returned type of the `noSerialize()` function. It will be TYPE or undefined.
+
+```typescript
+export type NoSerialize<T> =
+  | (T & {
+      __no_serialize__: true;
+    })
+  | undefined;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/serdes/verify.ts)
+
+<h2 id="noserialize-type-alias">NoSerialize</h2>
+
+Returned type of the `noSerialize()` function. It will be TYPE or undefined.
+
+```typescript
+export type NoSerialize<T> =
+  | (T & {
+      __no_serialize__: true;
+    })
+  | undefined;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/serdes/verify.ts)
+
+<h2 id="noserializesymbol">NoSerializeSymbol</h2>
+
+If an object has this property, it will not be serialized. Use this on prototypes to avoid having to call `noSerialize()` on every object.
+
+```typescript
+NoSerializeSymbol: unique symbol
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/serdes/verify.ts)
+
+<h2 id="onrenderfn">OnRenderFn</h2>
+
+```typescript
+export type OnRenderFn<PROPS> = (props: PROPS) => JSXOutput;
+```
+
+**References:** [JSXOutput](#jsxoutput)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/component.public.ts)
+
+<h2 id="onvisibletaskoptions">OnVisibleTaskOptions</h2>
+
+```typescript
+export interface OnVisibleTaskOptions
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+strategy?
+
+</td><td>
+
+</td><td>
+
+[VisibleTaskStrategy](#visibletaskstrategy)
+
+</td><td>
+
+_(Optional)_ The strategy to use to determine when the "VisibleTask" should first execute.
+
+- `intersection-observer`: the task will first execute when the element is visible in the viewport, under the hood it uses the IntersectionObserver API. - `document-ready`: the task will first execute when the document is ready, under the hood it uses the document `load` event. - `document-idle`: the task will first execute when the document is idle, under the hood it uses the requestIdleCallback API.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-visible-task.ts)
+
+<h2 id="pending">Pending</h2>
+
+```typescript
+Pending: Component<PendingProps>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/pending.tsx)
+
+<h2 id="pendingprops">PendingProps</h2>
+
+```typescript
+export type PendingProps = {
+  fallback$?: QRL<() => JSXOutput>;
+  delay?: number;
+};
+```
+
+**References:** [QRL](#qrl-type-alias), [JSXOutput](#jsxoutput)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/pending.tsx)
+
+<h2 id="prefetchgraph">PrefetchGraph</h2>
+
+> This API is provided as an alpha preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+
+> Warning: This API is now obsolete.
+>
+> This is no longer needed as the preloading happens automatically in qrl-class. You can remove this component from your app.
+
+```typescript
+PrefetchGraph: (_opts?: {
+  base?: string;
+  manifestHash?: string;
+  manifestURL?: string;
+  nonce?: string;
+}) => JSXOutput;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+\_opts
+
+</td><td>
+
+\{ base?: string; manifestHash?: string; manifestURL?: string; nonce?: string; }
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[JSXOutput](#jsxoutput)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/prefetch-service-worker/prefetch.ts)
+
+<h2 id="prefetchserviceworker">PrefetchServiceWorker</h2>
+
+> This API is provided as an alpha preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+
+> Warning: This API is now obsolete.
+>
+> This is no longer needed as the preloading happens automatically in qrl-class.ts. Leave this in your app for a while so it uninstalls existing service workers, but don't use it for new projects.
+
+```typescript
+PrefetchServiceWorker: (opts: {
+  base?: string;
+  scope?: string;
+  path?: string;
+  verbose?: boolean;
+  fetchBundleGraph?: boolean;
+  nonce?: string;
+}) => JSXOutput;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+opts
+
+</td><td>
+
+\{ base?: string; scope?: string; path?: string; verbose?: boolean; fetchBundleGraph?: boolean; nonce?: string; }
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[JSXOutput](#jsxoutput)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/prefetch-service-worker/prefetch.ts)
+
+<h2 id="computedsignal-promise">promise</h2>
+
+A promise that resolves when the value is computed or rejected.
+
+```typescript
+promise(): Promise<void>;
+```
+
+**Returns:**
+
+Promise&lt;void&gt;
+
+<h2 id="propfunction">PropFunction</h2>
+
+Alias for `QRL<T>`. Of historic relevance only.
+
+```typescript
+export type PropFunction<T> = QRL<T>;
+```
+
+**References:** [QRL](#qrl-type-alias)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.public.ts)
+
+<h2 id="propsof">PropsOf</h2>
+
+Infers `Props` from the component or tag.
+
+```typescript
+export type PropsOf<COMP> = COMP extends string
+  ? COMP extends keyof QwikIntrinsicElements
+    ? QwikIntrinsicElements[COMP]
+    : QwikIntrinsicElements["span"]
+  : NonNullable<COMP> extends never
+    ? never
+    : COMP extends FunctionComponent<infer PROPS>
+      ? PROPS extends Record<any, infer V>
+        ? IsAny<V> extends true
+          ? never
+          : ObjectProps<PROPS>
+        : COMP extends Component<infer OrigProps>
+          ? ObjectProps<OrigProps>
+          : PROPS
+      : never;
+```
+
+**References:** [QwikIntrinsicElements](#qwikintrinsicelements), [FunctionComponent](#functioncomponent), [Component](#component)
+
+```tsx
+const Desc = component$(
+  ({ desc, ...props }: { desc: string } & PropsOf<"div">) => {
+    return <div {...props}>{desc}</div>;
+  },
+);
+
+const TitleBox = component$(
+  ({ title, ...props }: { title: string } & PropsOf<Box>) => {
+    return (
+      <Box {...props}>
+        <h1>{title}</h1>
+      </Box>
+    );
+  },
+);
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/component.public.ts)
+
+<h2 id="publicprops">PublicProps</h2>
+
+Extends the defined component PROPS, adding the default ones (children and q:slot) and allowing plain functions to QRL arguments.
+
+```typescript
+export type PublicProps<PROPS> = (PROPS extends Record<any, any>
+  ? Omit<PROPS, `${string}$`> & _Only$<PROPS>
+  : unknown extends PROPS
+    ? {}
+    : PROPS) &
+  ComponentBaseProps &
+  ComponentChildren<PROPS>;
+```
+
+**References:** [ComponentBaseProps](#componentbaseprops)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/component.public.ts)
+
+<h2 id="qrl-function">qrl</h2>
+
+The `QRL` type represents a lazy-loadable AND serializable resource.
+
+QRL stands for Qwik URL.
+
+Use `QRL` when you want to refer to a lazy-loaded resource. `QRL`s are most often used for code (functions) but can also be used for other resources such as `string`s in the case of styles.
+
+`QRL` is an opaque token that is generated by the Qwik Optimizer. (Do not rely on any properties in `QRL` as it may change between versions.)
+
+\#\# Creating `QRL` references
+
+Creating `QRL` is done using `$(...)` function. `$(...)` is a special marker for the Qwik Optimizer that marks that the code should be extracted into a lazy-loaded symbol.
+
+```tsx
+useOnDocument(
+  "mousemove",
+  $((event) => console.log("mousemove", event)),
+);
+```
+
+In the above code, the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
+
+```tsx
+// FILE: <current file>
+useOnDocument("mousemove", qrl("./chunk-abc.js", "onMousemove"));
+
+// FILE: chunk-abc.js
+export const onMousemove = () => console.log("mousemove");
+```
+
+NOTE: `qrl(...)` is a result of Qwik Optimizer transformation. You should never have to invoke this function directly in your application. The `qrl(...)` function should be invoked only after the Qwik Optimizer transformation.
+
+\#\# Using `QRL`s
+
+Use `QRL` type in your application when you want to get a lazy-loadable reference to a resource (most likely a function).
+
+```tsx
+// Example of declaring a custom functions which takes callback as QRL.
+export function useMyFunction(callback: QRL<() => void>) {
+  doExtraStuff();
+  // The callback passed to `onDocument` requires `QRL`.
+  useOnDocument("mousemove", callback);
+}
+```
+
+In the above example, the way to think about the code is that you are not asking for a callback function but rather a reference to a lazy-loadable callback function. Specifically, the function loading should be delayed until it is actually needed. In the above example, the function would not load until after a `mousemove` event on `document` fires.
+
+\#\# Resolving `QRL` references
+
+At times it may be necessary to resolve a `QRL` reference to the actual value. This can be performed using `QRL.resolve(..)` function.
+
+```tsx
+// Assume you have QRL reference to a greet function
+const lazyGreet: QRL<() => void> = $(() => console.log("Hello World!"));
+
+// Use `qrlImport` to load / resolve the reference.
+const greet: () => void = await lazyGreet.resolve();
+
+//  Invoke it
+greet();
+```
+
+NOTE: `element` is needed because `QRL`s are relative and need a base location to resolve against. The base location is encoded in the HTML in the form of `<div q:base="/url">`.
+
+\#\# `QRL.resolved`
+
+Once `QRL.resolve()` returns, the value is stored under `QRL.resolved`. This allows the value to be used without having to await `QRL.resolve()` again.
+
+\#\# Question: Why not just use `import()`?
+
+At first glance, `QRL` serves the same purpose as `import()`. However, there are three subtle differences that need to be taken into account.
+
+1. `QRL`s must be serializable into HTML. 2. `QRL`s must be resolved by framework relative to `q:base`. 3. `QRL`s must be able to capture lexically scoped variables. 4. `QRL`s encapsulate the difference between running with and without Qwik Optimizer. 5. `QRL`s allow expressing lazy-loaded boundaries without thinking about chunk and symbol names.
+
+Let's assume that you intend to write code such as this:
+
+```tsx
+return <button onClick={() => (await import('./chunk-abc.js')).onClick}>
+```
+
+The above code needs to be serialized into DOM such as:
+
+```
+<div q:base="/build/">
+  <button q-e:click="./chunk-abc.js#onClick">...</button>
+</div>
+```
+
+1. Notice there is no easy way to extract chunk (`./chunk-abc.js`) and symbol (`onClick`) into HTML. 2. Notice that even if you could extract it, the `import('./chunk-abc.js')` would become relative to where the `import()` file is declared. Because it is our framework doing the load, the `./chunk-abc.js` would become relative to the framework file. This is not correct, as it should be relative to the original file generated by the bundler. 3. Next, the framework needs to resolve the `./chunk-abc.js` and needs a base location that is encoded in the HTML. 4. The QRL needs to be able to capture lexically scoped variables. (`import()` only allows loading top-level symbols which don't capture variables.) 5. As a developer, you don't want to think about `import` and naming the chunks and symbols. You just want to say: "this should be lazy."
+
+These are the main reasons why Qwik introduces its own concept of `QRL`.
+
+```typescript
+export type QRL<TYPE = unknown> = {
+  __qwik_serializable__?: any;
+  __brand__QRL__?: TYPE;
+  resolve(): Promise<TYPE>;
+  resolved: undefined | TYPE;
+  getCaptured(): unknown[] | null;
+  getSymbol(): string;
+  getHash(): string;
+  dev?: QRLDev | null;
+} & BivariantQrlFn<QrlArgs<TYPE>, QrlReturn<TYPE>>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.ts)
+
+<h2 id="qrl-type-alias">QRL</h2>
+
+The `QRL` type represents a lazy-loadable AND serializable resource.
+
+QRL stands for Qwik URL.
+
+Use `QRL` when you want to refer to a lazy-loaded resource. `QRL`s are most often used for code (functions) but can also be used for other resources such as `string`s in the case of styles.
+
+`QRL` is an opaque token that is generated by the Qwik Optimizer. (Do not rely on any properties in `QRL` as it may change between versions.)
+
+\#\# Creating `QRL` references
+
+Creating `QRL` is done using `$(...)` function. `$(...)` is a special marker for the Qwik Optimizer that marks that the code should be extracted into a lazy-loaded symbol.
+
+```tsx
+useOnDocument(
+  "mousemove",
+  $((event) => console.log("mousemove", event)),
+);
+```
+
+In the above code, the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
+
+```tsx
+// FILE: <current file>
+useOnDocument("mousemove", qrl("./chunk-abc.js", "onMousemove"));
+
+// FILE: chunk-abc.js
+export const onMousemove = () => console.log("mousemove");
+```
+
+NOTE: `qrl(...)` is a result of Qwik Optimizer transformation. You should never have to invoke this function directly in your application. The `qrl(...)` function should be invoked only after the Qwik Optimizer transformation.
+
+\#\# Using `QRL`s
+
+Use `QRL` type in your application when you want to get a lazy-loadable reference to a resource (most likely a function).
+
+```tsx
+// Example of declaring a custom functions which takes callback as QRL.
+export function useMyFunction(callback: QRL<() => void>) {
+  doExtraStuff();
+  // The callback passed to `onDocument` requires `QRL`.
+  useOnDocument("mousemove", callback);
+}
+```
+
+In the above example, the way to think about the code is that you are not asking for a callback function but rather a reference to a lazy-loadable callback function. Specifically, the function loading should be delayed until it is actually needed. In the above example, the function would not load until after a `mousemove` event on `document` fires.
+
+\#\# Resolving `QRL` references
+
+At times it may be necessary to resolve a `QRL` reference to the actual value. This can be performed using `QRL.resolve(..)` function.
+
+```tsx
+// Assume you have QRL reference to a greet function
+const lazyGreet: QRL<() => void> = $(() => console.log("Hello World!"));
+
+// Use `qrlImport` to load / resolve the reference.
+const greet: () => void = await lazyGreet.resolve();
+
+//  Invoke it
+greet();
+```
+
+NOTE: `element` is needed because `QRL`s are relative and need a base location to resolve against. The base location is encoded in the HTML in the form of `<div q:base="/url">`.
+
+\#\# `QRL.resolved`
+
+Once `QRL.resolve()` returns, the value is stored under `QRL.resolved`. This allows the value to be used without having to await `QRL.resolve()` again.
+
+\#\# Question: Why not just use `import()`?
+
+At first glance, `QRL` serves the same purpose as `import()`. However, there are three subtle differences that need to be taken into account.
+
+1. `QRL`s must be serializable into HTML. 2. `QRL`s must be resolved by framework relative to `q:base`. 3. `QRL`s must be able to capture lexically scoped variables. 4. `QRL`s encapsulate the difference between running with and without Qwik Optimizer. 5. `QRL`s allow expressing lazy-loaded boundaries without thinking about chunk and symbol names.
+
+Let's assume that you intend to write code such as this:
+
+```tsx
+return <button onClick={() => (await import('./chunk-abc.js')).onClick}>
+```
+
+The above code needs to be serialized into DOM such as:
+
+```
+<div q:base="/build/">
+  <button q-e:click="./chunk-abc.js#onClick">...</button>
+</div>
+```
+
+1. Notice there is no easy way to extract chunk (`./chunk-abc.js`) and symbol (`onClick`) into HTML. 2. Notice that even if you could extract it, the `import('./chunk-abc.js')` would become relative to where the `import()` file is declared. Because it is our framework doing the load, the `./chunk-abc.js` would become relative to the framework file. This is not correct, as it should be relative to the original file generated by the bundler. 3. Next, the framework needs to resolve the `./chunk-abc.js` and needs a base location that is encoded in the HTML. 4. The QRL needs to be able to capture lexically scoped variables. (`import()` only allows loading top-level symbols which don't capture variables.) 5. As a developer, you don't want to think about `import` and naming the chunks and symbols. You just want to say: "this should be lazy."
+
+These are the main reasons why Qwik introduces its own concept of `QRL`.
+
+```typescript
+export type QRL<TYPE = unknown> = {
+  __qwik_serializable__?: any;
+  __brand__QRL__?: TYPE;
+  resolve(): Promise<TYPE>;
+  resolved: undefined | TYPE;
+  getCaptured(): unknown[] | null;
+  getSymbol(): string;
+  getHash(): string;
+  dev?: QRLDev | null;
+} & BivariantQrlFn<QrlArgs<TYPE>, QrlReturn<TYPE>>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.public.ts)
+
+<h2 id="qrleventhandlermulti">QRLEventHandlerMulti</h2>
+
+An event handler for Qwik events, can be a handler QRL or an array of handler QRLs.
+
+```typescript
+export type QRLEventHandlerMulti<EV extends Event, EL> =
+  | QRL<EventHandler<EV, EL>>
+  | undefined
+  | null
+  | QRLEventHandlerMulti<EV, EL>[];
+```
+
+**References:** [QRL](#qrl-type-alias), [EventHandler](#eventhandler), [QRLEventHandlerMulti](#qrleventhandlermulti)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="qwikanimationevent">QwikAnimationEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `AnimationEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikAnimationEvent<T = Element> = NativeAnimationEvent;
+```
+
+**References:** [NativeAnimationEvent](#nativeanimationevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikattributes">QwikAttributes</h2>
+
+The Qwik DOM attributes without plain handlers, for use as function parameters
+
+```typescript
+export interface QwikAttributes<EL extends Element> extends DOMAttributesBase<EL>, QwikEvents<EL, false>
+```
+
+**Extends:** DOMAttributesBase&lt;EL&gt;, QwikEvents&lt;EL, false&gt;
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+class?
+
+</td><td>
+
+</td><td>
+
+[ClassList](#classlist) \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-attributes.ts)
+
+<h2 id="qwikchangeevent">QwikChangeEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `Event` and use the second argument to the handler function for the current event target. Also note that in Qwik, onInput$ with the InputEvent is the event that behaves like onChange in React.
+
+```typescript
+export type QwikChangeEvent<T = Element> = Event;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikclipboardevent">QwikClipboardEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `ClipboardEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikClipboardEvent<T = Element> = NativeClipboardEvent;
+```
+
+**References:** [NativeClipboardEvent](#nativeclipboardevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikcompositionevent">QwikCompositionEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `CompositionEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikCompositionEvent<T = Element> = NativeCompositionEvent;
+```
+
+**References:** [NativeCompositionEvent](#nativecompositionevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikdomattributes">QwikDOMAttributes</h2>
+
+```typescript
+export interface QwikDOMAttributes extends DOMAttributes<Element>
+```
+
+**Extends:** [DOMAttributes](#domattributes)&lt;Element&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik.ts)
+
+<h2 id="qwikdragevent">QwikDragEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `DragEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikDragEvent<T = Element> = NativeDragEvent;
+```
+
+**References:** [NativeDragEvent](#nativedragevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikfocusevent">QwikFocusEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `FocusEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikFocusEvent<T = Element> = NativeFocusEvent;
+```
+
+**References:** [NativeFocusEvent](#nativefocusevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikhtmlelements">QwikHTMLElements</h2>
+
+The DOM props without plain handlers, for use inside functions
+
+```typescript
+export type QwikHTMLElements = {
+  [tag in keyof HTMLElementTagNameMap]: Augmented<
+    HTMLElementTagNameMap[tag],
+    SpecialAttrs[tag]
+  > &
+    HTMLElementAttrs &
+    QwikAttributes<HTMLElementTagNameMap[tag]>;
+};
+```
+
+**References:** [HTMLElementAttrs](#htmlelementattrs), [QwikAttributes](#qwikattributes)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-generated.ts)
+
+<h2 id="qwikidleevent">QwikIdleEvent</h2>
+
+Emitted by qwik-loader on document when the document first becomes idle
+
+```typescript
+export type QwikIdleEvent = CustomEvent<{}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikinitevent">QwikInitEvent</h2>
+
+Emitted by qwik-loader on document when the document first becomes interactive
+
+```typescript
+export type QwikInitEvent = CustomEvent<{}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikintrinsicelements">QwikIntrinsicElements</h2>
+
+The interface holds available attributes of both native DOM elements and custom Qwik elements. An example showing how to define a customizable wrapper component:
+
+```tsx
+import { component$, Slot, type QwikIntrinsicElements } from "@qwik.dev/core";
+
+type WrapperProps = {
+  attributes?: QwikIntrinsicElements["div"];
+};
+
+export default component$<WrapperProps>(({ attributes }) => {
+  return (
+    <div {...attributes} class="p-2">
+      <Slot />
+    </div>
+  );
+});
+```
+
+Note: It is shorter to use `PropsOf<'div'>`
+
+```typescript
+export interface QwikIntrinsicElements extends QwikHTMLElements, QwikSVGElements
+```
+
+**Extends:** [QwikHTMLElements](#qwikhtmlelements), [QwikSVGElements](#qwiksvgelements)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-elements.ts)
+
+<h2 id="qwikinvalidevent">QwikInvalidEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `Event` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikInvalidEvent<T = Element> = Event;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikjsx">QwikJSX</h2>
+
+```typescript
+export declare namespace QwikJSX
+```
+
+<table><thead><tr><th>
+
+Interface
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[ElementChildrenAttribute](#qwikjsx-elementchildrenattribute)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+[IntrinsicAttributes](#qwikjsx-intrinsicattributes)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+[IntrinsicElements](#qwikjsx-intrinsicelements)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+<table><thead><tr><th>
+
+Type Alias
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[Element](#qwikjsx-element)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+[ElementType](#qwikjsx-elementtype)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik.ts)
+
+<h2 id="qwikkeyboardevent">QwikKeyboardEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `KeyboardEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikKeyboardEvent<T = Element> = NativeKeyboardEvent;
+```
+
+**References:** [NativeKeyboardEvent](#nativekeyboardevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikmouseevent">QwikMouseEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `MouseEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikMouseEvent<T = Element, E = NativeMouseEvent> = E;
+```
+
+**References:** [NativeMouseEvent](#nativemouseevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikpointerevent">QwikPointerEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `PointerEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikPointerEvent<T = Element> = NativePointerEvent;
+```
+
+**References:** [NativePointerEvent](#nativepointerevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikresumeevent">QwikResumeEvent</h2>
+
+Emitted by qwik-core on the container element when it resumes from a paused state. You cannot put a Qwik event handler on the container so you must listen on the document instead.
+
+```typescript
+export type QwikResumeEvent = CustomEvent<{}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwiksubmitevent">QwikSubmitEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `SubmitEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikSubmitEvent<T = Element> = SubmitEvent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwiksvgelements">QwikSVGElements</h2>
+
+The SVG props without plain handlers, for use inside functions
+
+```typescript
+export type QwikSVGElements = {
+  [K in keyof Omit<
+    SVGElementTagNameMap,
+    keyof HTMLElementTagNameMap
+  >]: SVGProps<SVGElementTagNameMap[K]>;
+};
+```
+
+**References:** [SVGProps](#svgprops)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-generated.ts)
+
+<h2 id="qwiksymbolevent">QwikSymbolEvent</h2>
+
+Emitted by qwik-loader on document when a module was lazily loaded
+
+```typescript
+export type QwikSymbolEvent = CustomEvent<{
+  symbol: string;
+  element: Element;
+  reqTime: number;
+  qBase?: string;
+  href?: string;
+}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwiktouchevent">QwikTouchEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `TouchEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikTouchEvent<T = Element> = NativeTouchEvent;
+```
+
+**References:** [NativeTouchEvent](#nativetouchevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwiktransitionevent">QwikTransitionEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `TransitionEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikTransitionEvent<T = Element> = NativeTransitionEvent;
+```
+
+**References:** [NativeTransitionEvent](#nativetransitionevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikuievent">QwikUIEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `UIEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikUIEvent<T = Element> = NativeUIEvent;
+```
+
+**References:** [NativeUIEvent](#nativeuievent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikviewtransitionevent">QwikViewTransitionEvent</h2>
+
+Emitted by qwik-core on document when the a view transition start
+
+```typescript
+export type QwikViewTransitionEvent = CustomEvent<ViewTransition>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikvisibleevent">QwikVisibleEvent</h2>
+
+Handled by qwik-loader when an element becomes visible. Used by `useVisibleTask$`. Does not bubble.
+
+```typescript
+export type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="qwikwheelevent">QwikWheelEvent</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `WheelEvent` and use the second argument to the handler function for the current event target
+
+```typescript
+export type QwikWheelEvent<T = Element> = NativeWheelEvent;
+```
+
+**References:** [NativeWheelEvent](#nativewheelevent)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-qwik-events.ts)
+
+<h2 id="readonlysignal">ReadonlySignal</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `Readonly<Signal<T>>` instead.
+
+```typescript
+export interface ReadonlySignal<T = unknown>
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+value
+
+</td><td>
+
+`readonly`
+
+</td><td>
+
+T
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/signal.public.ts)
+
+<h2 id="render-function">render</h2>
+
+Render JSX.
+
+Use this method to render JSX. This function does reconciling which means it always tries to reuse what is already in the DOM (rather then destroy and recreate content.) It returns a cleanup function you could use for cleaning up subscriptions.
+
+```typescript
+render: (
+  parent: Element | Document,
+  jsxNode: JSXOutput | FunctionComponent<any>,
+  opts?: RenderOptions,
+) => Promise<RenderResult>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+parent
+
+</td><td>
+
+Element \| Document
+
+</td><td>
+
+Element which will act as a parent to `jsxNode`. When possible the rendering will try to reuse existing nodes.
+
+</td></tr>
+<tr><td>
+
+jsxNode
+
+</td><td>
+
+[JSXOutput](#jsxoutput) \| [FunctionComponent](#functioncomponent)&lt;any&gt;
+
+</td><td>
+
+JSX to render
+
+</td></tr>
+<tr><td>
+
+opts
+
+</td><td>
+
+[RenderOptions](#renderoptions)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+Promise&lt;[RenderResult](#renderresult)&gt;
+
+An object containing a cleanup function.
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/client/dom-render.ts)
+
+<h2 id="catchphase-render-enum-member">Render</h2>
+
+<h2 id="renderonce">RenderOnce</h2>
+
+```typescript
+RenderOnce: FunctionComponent<{
+  children?: unknown;
+  key?: string | number | null | undefined;
+}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/jsx-runtime.ts)
+
+<h2 id="renderoptions">RenderOptions</h2>
+
+```typescript
+export interface RenderOptions
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+serverData?
+
+</td><td>
+
+</td><td>
+
+Record&lt;string, any&gt;
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/client/types.ts)
+
+<h2 id="renderresult">RenderResult</h2>
+
+```typescript
+export interface RenderResult
+```
+
+<table><thead><tr><th>
+
+Method
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[cleanup()](#renderresult-cleanup)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/client/types.ts)
+
+<h2 id="renderssroptions">RenderSSROptions</h2>
+
+```typescript
+export interface RenderSSROptions
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+base?
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+containerAttributes
+
+</td><td>
+
+</td><td>
+
+Record&lt;string, string&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+containerTagName
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+manifestHash
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+serverData?
+
+</td><td>
+
+</td><td>
+
+Record&lt;string, any&gt;
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+stream
+
+</td><td>
+
+</td><td>
+
+StreamWriter
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/ssr/ssr-types.ts)
+
+<h2 id="resource">Resource</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `useComputed$` instead.
+
+```tsx
+const Cmp = component$(() => {
+  const city = useSignal("");
+
+  const weather = useComputed$(async ({ track, cleanup, abortSignal }) => {
+    const cityName = track(city);
+    const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
+      signal: abortSignal,
+    });
+    const temp = (await res.json()) as { temp: number };
+    return temp;
+  });
+
+  return (
+    <div>
+      <input name="city" bind:value={city} />
+      <div>Temperature: {weather.value.temp}</div>
+    </div>
+  );
+});
+```
+
+```typescript
+Resource: <T>(input: ResourceProps<T>) => JSXOutput;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+\{ value, onResolved, onPending, onRejected, }
+
+</td><td>
+
+(not declared)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+input
+
+</td><td>
+
+[ResourceProps](#resourceprops)&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[JSXOutput](#jsxoutput)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourcectx">ResourceCtx</h2>
+
+```typescript
+export interface ResourceCtx<T = unknown> extends ComputeCtx<T>
+```
+
+**Extends:** ComputeCtx&lt;T&gt;
+
+<table><thead><tr><th>
+
+Method
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[cache(policyOrMilliseconds)](#resourcectx-cache)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourcefn">ResourceFn</h2>
+
+```typescript
+export type ResourceFn<T> = (ctx: ResourceCtx) => ValueOrPromise<T>;
+```
+
+**References:** [ResourceCtx](#resourcectx), [ValueOrPromise](#valueorpromise)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourceoptions">ResourceOptions</h2>
+
+Options to pass to `useResource$()`
+
+```typescript
+export interface ResourceOptions
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+timeout?
+
+</td><td>
+
+</td><td>
+
+number
+
+</td><td>
+
+_(Optional)_ Timeout in milliseconds. If the resource takes more than the specified millisecond, it will timeout. Resulting on a rejected resource.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourcepending">ResourcePending</h2>
+
+```typescript
+export type ResourcePending<T> = ResourceReturn<T>;
+```
+
+**References:** [ResourceReturn](#resourcereturn)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourceprops">ResourceProps</h2>
+
+```typescript
+export interface ResourceProps<T>
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+onPending?
+
+</td><td>
+
+</td><td>
+
+() =&gt; [JSXOutput](#jsxoutput) \| Promise&lt;[JSXOutput](#jsxoutput)&gt;
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+onRejected?
+
+</td><td>
+
+</td><td>
+
+(reason: Error) =&gt; [JSXOutput](#jsxoutput) \| Promise&lt;[JSXOutput](#jsxoutput)&gt;
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+onResolved
+
+</td><td>
+
+</td><td>
+
+(value: T) =&gt; [JSXOutput](#jsxoutput) \| Promise&lt;[JSXOutput](#jsxoutput)&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+value
+
+</td><td>
+
+`readonly`
+
+</td><td>
+
+[ResourceReturn](#resourcereturn)&lt;T&gt; \| [Signal](#signal)&lt;Promise&lt;T&gt; \| T&gt; \| Promise&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourcerejected">ResourceRejected</h2>
+
+```typescript
+export type ResourceRejected<T> = ResourceReturn<T>;
+```
+
+**References:** [ResourceReturn](#resourcereturn)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourceresolved">ResourceResolved</h2>
+
+```typescript
+export type ResourceResolved<T> = ResourceReturn<T>;
+```
+
+**References:** [ResourceReturn](#resourcereturn)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="resourcereturn">ResourceReturn</h2>
+
+```typescript
+export type ResourceReturn<T> = {
+  readonly value: Promise<T>;
+  readonly loading: boolean;
+};
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource.ts)
+
+<h2 id="reveal">Reveal</h2>
+
+```typescript
+Reveal: typeof revealCmp;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/reveal.tsx)
+
+<h2 id="revealorder">RevealOrder</h2>
+
+```typescript
+export type RevealOrder = "parallel" | "sequential" | "reverse" | "together";
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/utils/reveal.ts)
+
+<h2 id="revealprops">RevealProps</h2>
+
+```typescript
+export type RevealProps = {
+  order?: RevealOrder;
+  collapsed?: boolean;
+};
+```
+
+**References:** [RevealOrder](#revealorder)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/reveal.tsx)
+
+<h2 id="serializationstrategy">SerializationStrategy</h2>
+
+Serialization strategy for computed and async signals. This determines whether to serialize their value during SSR.
+
+- `never`: The value is never serialized. When the component is resumed, the value will be recalculated when it is first read. - `always`: The value is always serialized. This is the default.
+
+\*\*IMPORTANT\*\*: When you use `never`, your serialized HTML is smaller, but the recalculation will trigger subscriptions, meaning that other signals using this signal will recalculate, even if this signal didn't change.
+
+This is normally not a problem, but for async signals it may mean fetching something again.
+
+```typescript
+export type SerializationStrategy = "never" | "always";
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/types.ts)
+
+<h2 id="serializersymbol">SerializerSymbol</h2>
+
+If an object has this property as a function, it will be called with the object and should return a serializable value.
+
+This can be used to clean up, integrate with other libraries, etc.
+
+The type your object should conform to is:
+
+```ts
+{
+  [SerializerSymbol]: (this: YourType, toSerialize: YourType) => YourSerializableType;
+}
+```
+
+```typescript
+SerializerSymbol: unique symbol
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/serdes/verify.ts)
+
+<h2 id="setplatform">setPlatform</h2>
+
+Sets the `CorePlatform`.
+
+This is useful to override the platform in tests to change the behavior of, `requestAnimationFrame`, and import resolution.
+
+```typescript
+setPlatform: (plt: CorePlatform) => CorePlatform;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+plt
+
+</td><td>
+
+[CorePlatform](#coreplatform)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[CorePlatform](#coreplatform)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/platform/platform.ts)
+
+<h2 id="show">Show</h2>
+
+```typescript
+Show: ShowComponent;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/show.ts)
+
+<h2 id="showcomponent">ShowComponent</h2>
+
+```typescript
+export type ShowComponent = <
+  WHEN = unknown,
+  THEN extends JSXOutput = JSXOutput,
+  ELSE extends JSXOutput = JSXOutput,
+>(
+  props: PublicProps<ShowProps<WHEN, THEN, ELSE>>,
+  key: string | null,
+  flags: number,
+  dev?: DevJSX,
+) => JSXOutput;
+```
+
+**References:** [JSXOutput](#jsxoutput), [PublicProps](#publicprops), [ShowProps](#showprops), [DevJSX](#devjsx)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/show.ts)
+
+<h2 id="showprops">ShowProps</h2>
+
+```typescript
+export interface ShowProps<WHEN = unknown, THEN extends JSXOutput = JSXOutput, ELSE extends JSXOutput = JSXOutput>
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+else$?
+
+</td><td>
+
+</td><td>
+
+[QRL](#qrl-type-alias)&lt;(when: WHEN) =&gt; ELSE&gt;
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+then$
+
+</td><td>
+
+</td><td>
+
+[QRL](#qrl-type-alias)&lt;(when: WHEN) =&gt; THEN&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+when$
+
+</td><td>
+
+</td><td>
+
+[QRL](#qrl-type-alias)&lt;() =&gt; WHEN&gt;
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/control-flow/show.ts)
+
+<h2 id="signal">Signal</h2>
+
+A signal is a reactive value which can be read and written. When the signal is written, all tasks which are tracking the signal will be re-run and all components that read the signal will be re-rendered.
+
+Furthermore, when a signal value is passed as a prop to a component, the optimizer will automatically forward the signal. This means that `return <div title={signal.value}>hi</div>` will update the `title` attribute when the signal changes without having to re-render the component.
+
+```typescript
+export interface Signal<T = any>
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+untrackedValue
+
+</td><td>
+
+</td><td>
+
+T
+
+</td><td>
+
+Reading from this does not subscribe to updates; writing to this does not trigger updates.
+
+</td></tr>
+<tr><td>
+
+value
+
+</td><td>
+
+</td><td>
+
+T
+
+</td><td>
+
+Reading from this subscribes to updates; writing to this triggers updates.
+
+</td></tr>
+</tbody></table>
+
+<table><thead><tr><th>
+
+Method
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[trigger()](#signal-trigger)
+
+</td><td>
+
+Use this to trigger running subscribers, for example when the value mutated but remained the same object.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/signal.public.ts)
+
+<h2 id="skiprender">SkipRender</h2>
+
+```typescript
+SkipRender: JSXNode;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="slot">Slot</h2>
+
+Allows to project the children of the current component. `<Slot/>` can only be used within the context of a component defined with `component$`.
+
+```typescript
+Slot: FunctionComponent<{
+  name?: string;
+  children?: JSXChildren;
+}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/slot.public.ts)
+
+<h2 id="snapshotlistener">SnapshotListener</h2>
+
+```typescript
+export interface SnapshotListener
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+el
+
+</td><td>
+
+</td><td>
+
+Element
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+key
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+qrl
+
+</td><td>
+
+</td><td>
+
+[QRL](#qrl-type-alias)&lt;any&gt;
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/ssr/ssr-types.ts)
+
+<h2 id="snapshotmeta">SnapshotMeta</h2>
+
+```typescript
+export type SnapshotMeta = Record<string, SnapshotMetaValue>;
+```
+
+**References:** [SnapshotMetaValue](#snapshotmetavalue)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/ssr/ssr-types.ts)
+
+<h2 id="snapshotmetavalue">SnapshotMetaValue</h2>
+
+```typescript
+export interface SnapshotMetaValue
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+c?
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+h?
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+s?
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+w?
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/ssr/ssr-types.ts)
+
+<h2 id="snapshotresult">SnapshotResult</h2>
+
+```typescript
+export interface SnapshotResult
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+funcs
+
+</td><td>
+
+</td><td>
+
+string[]
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+mode
+
+</td><td>
+
+</td><td>
+
+'render' \| 'listeners' \| 'static'
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+objs?
+
+</td><td>
+
+</td><td>
+
+any[]
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+qrls
+
+</td><td>
+
+</td><td>
+
+[QRL](#qrl-type-alias)[]
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+resources
+
+</td><td>
+
+</td><td>
+
+ResourceReturnInternal&lt;any&gt;[]
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+state?
+
+</td><td>
+
+</td><td>
+
+[SnapshotState](#snapshotstate)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/ssr/ssr-types.ts)
+
+<h2 id="snapshotstate">SnapshotState</h2>
+
+> Warning: This API is now obsolete.
+>
+> not longer used in v2
+
+```typescript
+export interface SnapshotState
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+ctx
+
+</td><td>
+
+</td><td>
+
+[SnapshotMeta](#snapshotmeta)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+objs
+
+</td><td>
+
+</td><td>
+
+any[]
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+refs
+
+</td><td>
+
+</td><td>
+
+Record&lt;string, string&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+subs
+
+</td><td>
+
+</td><td>
+
+any[]
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/ssr/ssr-types.ts)
+
+<h2 id="ssrcomment">SSRComment</h2>
+
+```typescript
+SSRComment: FunctionComponent<{
+  data: string;
+}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="ssrhintprops">SSRHintProps</h2>
+
+```typescript
+export type SSRHintProps = {
+  dynamic?: boolean;
+};
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="ssrraw">SSRRaw</h2>
+
+```typescript
+SSRRaw: FunctionComponent<{
+  data: string;
+}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="ssrstream">SSRStream</h2>
+
+```typescript
+SSRStream: FunctionComponent<SSRStreamProps>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="ssrstreamblock">SSRStreamBlock</h2>
+
+```typescript
+SSRStreamBlock: FunctionComponent<{
+  children?: JSXOutput;
+}>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="ssrstreamchildren">SSRStreamChildren</h2>
+
+```typescript
+export type SSRStreamChildren =
+  | AsyncGenerator<JSXChildren, void, any>
+  | ((stream: SSRStreamWriter) => Promise<void>)
+  | (() => AsyncGenerator<JSXChildren, void, any>);
+```
+
+**References:** [JSXChildren](#jsxchildren), [SSRStreamWriter](#ssrstreamwriter)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="ssrstreamprops">SSRStreamProps</h2>
+
+```typescript
+export type SSRStreamProps = {
+  children: SSRStreamChildren;
+};
+```
+
+**References:** [SSRStreamChildren](#ssrstreamchildren)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="ssrstreamwriter">SSRStreamWriter</h2>
+
+```typescript
+export interface SSRStreamWriter
+```
+
+<table><thead><tr><th>
+
+Method
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+[write(chunk)](#ssrstreamwriter-write)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/utils.public.ts)
+
+<h2 id="svgattributes">SVGAttributes</h2>
+
+The TS types don't include the SVG attributes so we have to define them ourselves
+
+NOTE: These props are probably not complete
+
+```typescript
+export interface SVGAttributes<T extends Element = Element> extends AriaAttributes
+```
+
+**Extends:** AriaAttributes
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+"accent-height"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"alignment-baseline"?
+
+</td><td>
+
+</td><td>
+
+'auto' \| 'baseline' \| 'before-edge' \| 'text-before-edge' \| 'middle' \| 'central' \| 'after-edge' \| 'text-after-edge' \| 'ideographic' \| 'alphabetic' \| 'hanging' \| 'mathematical' \| 'inherit' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"arabic-form"?
+
+</td><td>
+
+</td><td>
+
+'initial' \| 'medial' \| 'terminal' \| 'isolated' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"baseline-shift"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"cap-height"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"clip-path"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"clip-rule"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"color-interpolation-filters"?
+
+</td><td>
+
+</td><td>
+
+'auto' \| 's-rGB' \| 'linear-rGB' \| 'inherit' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"color-interpolation"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"color-profile"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"color-rendering"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"dominant-baseline"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"edge-mode"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"enable-background"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"fill-opacity"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"fill-rule"?
+
+</td><td>
+
+</td><td>
+
+'nonzero' \| 'evenodd' \| 'inherit' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"flood-color"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"flood-opacity"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"font-family"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"font-size-adjust"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"font-size"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"font-stretch"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"font-style"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"font-variant"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"font-weight"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"glyph-name"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"glyph-orientation-horizontal"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"glyph-orientation-vertical"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"horiz-adv-x"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"horiz-origin-x"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"image-rendering"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"letter-spacing"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"lighting-color"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"marker-end"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"marker-mid"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"marker-start"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"overline-position"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"overline-thickness"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"paint-order"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"pointer-events"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"rendering-intent"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"shape-rendering"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stop-color"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stop-opacity"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"strikethrough-position"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"strikethrough-thickness"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stroke-dasharray"?
+
+</td><td>
+
+</td><td>
+
+string \| number \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stroke-dashoffset"?
+
+</td><td>
+
+</td><td>
+
+string \| number \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stroke-linecap"?
+
+</td><td>
+
+</td><td>
+
+'butt' \| 'round' \| 'square' \| 'inherit' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stroke-linejoin"?
+
+</td><td>
+
+</td><td>
+
+'miter' \| 'round' \| 'bevel' \| 'inherit' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stroke-miterlimit"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stroke-opacity"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"stroke-width"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"text-anchor"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"text-decoration"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"text-rendering"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"underline-position"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"underline-thickness"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"unicode-bidi"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"unicode-range"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"units-per-em"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"v-alphabetic"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"v-hanging"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"v-ideographic"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"v-mathematical"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"vector-effect"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"vert-adv-y"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"vert-origin-x"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"vert-origin-y"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"word-spacing"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"writing-mode"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"x-channel-selector"?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+"x-height"?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xlink:actuate"?](#svgattributes-_xlink_actuate_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xlink:arcrole"?](#svgattributes-_xlink_arcrole_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xlink:href"?](#svgattributes-_xlink_href_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xlink:role"?](#svgattributes-_xlink_role_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xlink:show"?](#svgattributes-_xlink_show_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xlink:title"?](#svgattributes-_xlink_title_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xlink:type"?](#svgattributes-_xlink_type_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xml:base"?](#svgattributes-_xml_base_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xml:lang"?](#svgattributes-_xml_lang_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xml:space"?](#svgattributes-_xml_space_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+["xmlns:xlink"?](#svgattributes-_xmlns_xlink_)
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+accumulate?
+
+</td><td>
+
+</td><td>
+
+'none' \| 'sum' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+additive?
+
+</td><td>
+
+</td><td>
+
+'replace' \| 'sum' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+allowReorder?
+
+</td><td>
+
+</td><td>
+
+'no' \| 'yes' \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+alphabetic?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+amplitude?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+ascent?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+attributeName?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+attributeType?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+autoReverse?
+
+</td><td>
+
+</td><td>
+
+Booleanish \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+azimuth?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+baseFrequency?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+baseProfile?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+bbox?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+begin?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+bias?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+by?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+calcMode?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+clip?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+clipPathUnits?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+color?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+contentScriptType?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+contentStyleType?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+crossOrigin?
+
+</td><td>
+
+</td><td>
+
+HTMLCrossOriginAttribute
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+cursor?
+
+</td><td>
+
+</td><td>
+
+number \| string
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+cx?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+cy?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+d?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+decelerate?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+descent?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+diffuseConstant?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+direction?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+display?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+divisor?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+dur?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+dx?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+dy?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+elevation?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+end?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+exponent?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+externalResourcesRequired?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+fill?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+filter?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+filterRes?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+filterUnits?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+focusable?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+format?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+fr?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+from?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+fx?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+fy?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+g1?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+g2?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+glyphRef?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+gradientTransform?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+gradientUnits?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+hanging?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+height?
+
+</td><td>
+
+</td><td>
+
+Size \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+href?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+id?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+ideographic?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+in?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+in2?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+intercept?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+k?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+k1?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+k2?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+k3?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+k4?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+kernelMatrix?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+kernelUnitLength?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+kerning?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+keyPoints?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+keySplines?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+keyTimes?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+lang?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+lengthAdjust?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+limitingConeAngle?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+local?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+markerHeight?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+markerUnits?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+markerWidth?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+mask?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+maskContentUnits?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+maskUnits?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+mathematical?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+max?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+media?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+method?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+min?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+mode?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+name?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+numOctaves?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+offset?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+opacity?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+operator?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+order?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+orient?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+orientation?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+origin?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+overflow?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+panose1?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+path?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+pathLength?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+patternContentUnits?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+patternTransform?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+patternUnits?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+points?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+pointsAtX?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+pointsAtY?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+pointsAtZ?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+preserveAlpha?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+preserveAspectRatio?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+primitiveUnits?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+r?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+radius?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+refX?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+refY?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+repeatCount?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+repeatDur?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+requiredextensions?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+requiredFeatures?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+restart?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+result?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+role?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+rotate?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+rx?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+ry?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+scale?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+seed?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+slope?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+spacing?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+specularConstant?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+specularExponent?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+speed?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+spreadMethod?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+startOffset?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+stdDeviation?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+stemh?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+stemv?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+stitchTiles?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+string?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+stroke?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+style?
+
+</td><td>
+
+</td><td>
+
+[CSSProperties](#cssproperties) \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+surfaceScale?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+systemLanguage?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+tabindex?
+
+</td><td>
+
+</td><td>
+
+number \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+tableValues?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+target?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+targetX?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+targetY?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+textLength?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+to?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+transform?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+type?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+u1?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+u2?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+unicode?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+values?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+version?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+viewBox?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+viewTarget?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+visibility?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+width?
+
+</td><td>
+
+</td><td>
+
+Size \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+widths?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+x?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+x1?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+x2?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+xmlns?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+y?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+y1?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+y2?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+yChannelSelector?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+z?
+
+</td><td>
+
+</td><td>
+
+number \| string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+<tr><td>
+
+zoomAndPan?
+
+</td><td>
+
+</td><td>
+
+string \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-generated.ts)
+
+<h2 id="svgprops">SVGProps</h2>
+
+```typescript
+export interface SVGProps<T extends Element> extends SVGAttributes, QwikAttributes<T>
+```
+
+**Extends:** [SVGAttributes](#svgattributes), [QwikAttributes](#qwikattributes)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/jsx/types/jsx-generated.ts)
+
+<h2 id="sync_">sync$</h2>
+
+Extract function into a synchronously loadable QRL.
+
+NOTE: Synchronous QRLs functions can't close over any variables, including exports.
+
+```typescript
+sync$: <T extends Function>(fn: T) => SyncQRL<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+fn
+
+</td><td>
+
+T
+
+</td><td>
+
+Function to extract.
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[SyncQRL](#syncqrl)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.public.ts)
+
+<h2 id="syncqrl">SyncQRL</h2>
+
+```typescript
+export type SyncQRL<TYPE extends Function> = QRL<TYPE> & {
+  __brand__SyncQRL__: TYPE;
+  resolved: TYPE;
+  dev?: QRLDev | null;
+} & BivariantQrlFn<QrlArgs<TYPE>, QrlReturn<TYPE>>;
+```
+
+**References:** [QRL](#qrl-type-alias)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/qrl/qrl.public.ts)
+
+<h2 id="taskctx">TaskCtx</h2>
+
+```typescript
+export interface TaskCtx
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+cleanup
+
+</td><td>
+
+</td><td>
+
+(callback: () =&gt; [ValueOrPromise](#valueorpromise)&lt;void&gt;) =&gt; void
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+track
+
+</td><td>
+
+</td><td>
+
+[Tracker](#tracker)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-task.ts)
+
+<h2 id="taskfn">TaskFn</h2>
+
+```typescript
+export type TaskFn = (
+  ctx: TaskCtx,
+) => ValueOrPromise<void | (() => ValueOrPromise<void>)>;
+```
+
+**References:** [TaskCtx](#taskctx), [ValueOrPromise](#valueorpromise)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-task.ts)
+
+<h2 id="taskoptions">TaskOptions</h2>
+
+```typescript
+export interface TaskOptions
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+deferUpdates?
+
+</td><td>
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_ Block the rendering of the component until the task completes. Default is `true`
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-task.ts)
+
+<h2 id="tracker">Tracker</h2>
+
+Used to signal to Qwik which state should be watched for changes.
+
+The `Tracker` is passed into the `taskFn` of `useTask`. It is intended to be used to wrap state objects in a read proxy which signals to Qwik which properties should be watched for changes. A change to any of the properties causes the `taskFn` to rerun.
+
+### Example
+
+The `obs` passed into the `taskFn` is used to mark `state.count` as a property of interest. Any changes to the `state.count` property will cause the `taskFn` to rerun.
+
+```tsx
+const Cmp = component$(() => {
+  const store = useStore({ count: 0, doubleCount: 0 });
+  const signal = useSignal(0);
+  useTask$(({ track }) => {
+    // Any signals or stores accessed inside the task will be tracked
+    const count = track(() => store.count);
+    // For stores you can also pass the store and specify the property
+    track(store, "count");
+    // You can also pass a signal to track() directly
+    const signalCount = track(signal);
+    store.doubleCount = count + signalCount;
+  });
+  return (
+    <div>
+      <span>
+        {store.count} / {store.doubleCount}
+      </span>
+      <button
+        onClick$={() => {
+          store.count++;
+          signal.value++;
+        }}
+      >
+        +
+      </button>
+    </div>
+  );
+});
+```
+
+```typescript
+export interface Tracker
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-task.ts)
+
+<h2 id="signal-trigger">trigger</h2>
+
+Use this to trigger running subscribers, for example when the value mutated but remained the same object.
+
+```typescript
+trigger(): void;
+```
+
+**Returns:**
+
+void
+
+<h2 id="untrack">untrack</h2>
+
+Get the value of the expression without tracking listeners. A function will be invoked, signals will return their value, and stores will be unwrapped (they return the backing object).
+
+When you pass a function, you can also pass additional arguments that the function will receive.
+
+Note that stores are not unwrapped recursively.
+
+```typescript
+untrack: <T, A extends any[]>(
+  expr: ((...args: A) => T) | Signal<T> | T,
+  ...args: A
+) => T;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+expr
+
+</td><td>
+
+((...args: A) =&gt; T) \| [Signal](#signal)&lt;T&gt; \| T
+
+</td><td>
+
+The function or object to evaluate without tracking.
+
+</td></tr>
+<tr><td>
+
+args
+
+</td><td>
+
+A
+
+</td><td>
+
+Additional arguments to pass when `expr` is a function.
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+T
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-core.ts)
+
+<h2 id="unwrapstore">unwrapStore</h2>
+
+Get the original object that was wrapped by the store. Useful if you want to clone a store (structuredClone, IndexedDB,...)
+
+```typescript
+unwrapStore: <T>(value: T) => T;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+value
+
+</td><td>
+
+T
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+T
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/reactive-primitives/impl/store.ts)
+
+<h2 id="usecomputed_">useComputed$</h2>
+
+Creates a computed signal which is calculated from the given function. A computed signal is a signal which is calculated from other signals. When the signals change, the computed signal is recalculated, and if the result changed, all tasks which are tracking the signal will be re-run and all components that read the signal will be re-rendered.
+
+Every synchronous signal or store read is tracked automatically. Reads after an `await` are not: the tracking context is lost, so track them explicitly with the `track()` provided on the context argument. When the function is async, reading an unresolved `.value` throws the computation promise, and reading a failed `.value` throws the error.
+
+The function must not have any side effects.
+
+```typescript
+useComputed$: <T>(
+  qrl: ComputedFn<T>,
+  options?: ComputedOptions<T> | undefined,
+) => ComputedReturnType<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+qrl
+
+</td><td>
+
+[ComputedFn](#computedfn)&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+options
+
+</td><td>
+
+[ComputedOptions](#computedoptions)&lt;T&gt; \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[ComputedReturnType](#computedreturntype)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-computed.ts)
+
+<h2 id="useconstant">useConstant</h2>
+
+Stores a value which is retained for the lifetime of the component. Subsequent calls to `useConstant` will always return the first value given.
+
+If the value is a function, the function is invoked once to calculate the actual value. You can then also pass arguments to call the function with, so that you don't need to create a new function on every render.
+
+```typescript
+useConstant: <T, A extends any[]>(value: ((...args: A) => T) | T, ...args: A) =>
+  T;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+value
+
+</td><td>
+
+((...args: A) =&gt; T) \| T
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+args
+
+</td><td>
+
+A
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+T
+
+```tsx
+const fixedRandomValue = useConstant(() => Math.random);
+const otherFixedRandomValue = useConstant(Math.random);
+
+const getConfig = (env: string) => { ... }
+const config = useConstant(getConfig, environment);
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-signal.ts)
+
+<h2 id="usecontext">useContext</h2>
+
+Retrieve Context value.
+
+Use `useContext()` to retrieve the value of context in a component. To retrieve a value a parent component needs to invoke `useContextProvider()` to assign a value.
+
+### Example
+
+```tsx
+// Declare the Context type.
+interface TodosStore {
+  items: string[];
+}
+// Create a Context ID (no data is saved here.)
+// You will use this ID to both create and retrieve the Context.
+export const TodosContext = createContextId<TodosStore>("Todos");
+
+// Example of providing context to child components.
+export const App = component$(() => {
+  useContextProvider(
+    TodosContext,
+    useStore<TodosStore>({
+      items: ["Learn Qwik", "Build Qwik app", "Profit"],
+    }),
+  );
+
+  return <Items />;
+});
+
+// Example of retrieving the context provided by a parent component.
+export const Items = component$(() => {
+  const todos = useContext(TodosContext);
+  return (
+    <ul>
+      {todos.items.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  );
+});
+```
+
+```typescript
+useContext: UseContext;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-context.ts)
+
+<h2 id="usecontextprovider">useContextProvider</h2>
+
+Assign a value to a Context.
+
+Use `useContextProvider()` to assign a value to a context. The assignment happens in the component's function. Once assigned, use `useContext()` in any child component to retrieve the value.
+
+Context is a way to pass stores to the child components without prop-drilling. Note that scalar values are allowed, but for reactivity you need signals or stores.
+
+### Example
+
+```tsx
+// Declare the Context type.
+interface TodosStore {
+  items: string[];
+}
+// Create a Context ID (no data is saved here.)
+// You will use this ID to both create and retrieve the Context.
+export const TodosContext = createContextId<TodosStore>("Todos");
+
+// Example of providing context to child components.
+export const App = component$(() => {
+  useContextProvider(
+    TodosContext,
+    useStore<TodosStore>({
+      items: ["Learn Qwik", "Build Qwik app", "Profit"],
+    }),
+  );
+
+  return <Items />;
+});
+
+// Example of retrieving the context provided by a parent component.
+export const Items = component$(() => {
+  const todos = useContext(TodosContext);
+  return (
+    <ul>
+      {todos.items.map((item) => (
+        <li>{item}</li>
+      ))}
+    </ul>
+  );
+});
+```
+
+```typescript
+useContextProvider: <STATE>(context: ContextId<STATE>, newValue: STATE) => void
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+context
+
+</td><td>
+
+[ContextId](#contextid)&lt;STATE&gt;
+
+</td><td>
+
+The context to assign a value to.
+
+</td></tr>
+<tr><td>
+
+newValue
+
+</td><td>
+
+STATE
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-context.ts)
+
+<h2 id="useid">useId</h2>
+
+```typescript
+useId: () => string;
+```
+
+**Returns:**
+
+string
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-id.ts)
+
+<h2 id="useon">useOn</h2>
+
+Register a listener on the current component's host element.
+
+Used to programmatically add event listeners. Useful from custom `use*` methods, which do not have access to the JSX. Otherwise, it's adding a JSX listener in the `<div>` is a better idea.
+
+Events are case sensitive.
+
+```typescript
+useOn: <T extends KnownEventNames>(event: T | T[], eventQrl: EventQRL<T>, options?: UseOnOptions) => void
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+event
+
+</td><td>
+
+T \| T[]
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+eventQrl
+
+</td><td>
+
+EventQRL&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+options
+
+</td><td>
+
+[UseOnOptions](#useonoptions)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-on.ts)
+
+<h2 id="useondocument">useOnDocument</h2>
+
+Register a listener on `document`.
+
+Used to programmatically add event listeners. Useful from custom `use*` methods, which do not have access to the JSX.
+
+Events are case sensitive.
+
+```typescript
+useOnDocument: <T extends KnownEventNames>(event: T | T[], eventQrl: EventQRL<T>, options?: UseOnOptions) => void
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+event
+
+</td><td>
+
+T \| T[]
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+eventQrl
+
+</td><td>
+
+EventQRL&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+options
+
+</td><td>
+
+[UseOnOptions](#useonoptions)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-on.ts)
+
+<h2 id="useonoptions">UseOnOptions</h2>
+
+```typescript
+export type UseOnOptions = UseOnOptionsBase &
+  (
+    | {
+        passive?: boolean;
+        preventdefault?: never;
+      }
+    | {
+        passive?: never;
+        preventdefault?: boolean;
+      }
+  );
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-on.ts)
+
+<h2 id="useonwindow">useOnWindow</h2>
+
+Register a listener on `window`.
+
+Used to programmatically add event listeners. Useful from custom `use*` methods, which do not have access to the JSX.
+
+Events are case sensitive.
+
+```typescript
+useOnWindow: <T extends KnownEventNames>(event: T | T[], eventQrl: EventQRL<T>, options?: UseOnOptions) => void
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+event
+
+</td><td>
+
+T \| T[]
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+eventQrl
+
+</td><td>
+
+EventQRL&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+options
+
+</td><td>
+
+[UseOnOptions](#useonoptions)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-on.ts)
+
+<h2 id="useresource_">useResource$</h2>
+
+> Warning: This API is now obsolete.
+>
+> Use `useComputed$` instead, which is more powerful and flexible. `useResource$` is still available for backward compatibility but it is recommended to migrate to `useComputed$` for new code and when updating existing code.
+
+This method works like an async memoized function that runs whenever some tracked value changes and returns some data.
+
+`useResource` however returns immediate a `ResourceReturn` object that contains the data and a state that indicates if the data is available or not.
+
+The status can be one of the following:
+
+- `pending` - the data is not yet available. - `resolved` - the data is available. - `rejected` - the data is not available due to an error or timeout.
+
+Be careful when using a `try/catch` statement in `useResource$`. If you catch the error and don't re-throw it (or a new Error), the resource status will never be `rejected`.
+
+```typescript
+useResource$: <T>(
+  qrl: import("./use-resource").ResourceFn<T>,
+  opts?: import("./use-resource").ResourceOptions | undefined,
+) => import("./use-resource").ResourceReturn<T>;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+qrl
+
+</td><td>
+
+import("./use-resource").[ResourceFn](#resourcefn)&lt;T&gt;
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+opts
+
+</td><td>
+
+import("./use-resource").[ResourceOptions](#resourceoptions) \| undefined
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+import("./use-resource").[ResourceReturn](#resourcereturn)&lt;T&gt;
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-resource-dollar.ts)
+
+<h2 id="useserializer_">useSerializer$</h2>
+
+Creates a signal which holds a custom serializable value. It requires that the value implements the `CustomSerializable` type, which means having a function under the `[SerializeSymbol]` property that returns a serializable value when called.
+
+The `fn` you pass is called with the result of the serialization (in the browser, only when the value is needed), or `undefined` when not yet initialized. If you refer to other signals, `fn` will be called when those change just like computed signals, and then the argument will be the previous output, not the serialized result.
+
+This is useful when using third party libraries that use custom objects that are not serializable.
+
+Note that the `fn` is called lazily, so it won't impact container resume.
+
+```typescript
+useSerializer$: typeof createSerializer$;
+```
+
+```tsx
+class MyCustomSerializable {
+  constructor(public n: number) {}
+  inc() {
+    this.n++;
+  }
+}
+const Cmp = component$(() => {
+  const custom = useSerializer$({
+    deserialize: (data) => new MyCustomSerializable(data),
+    serialize: (data) => data.n,
+    initial: 2,
+  });
+  return <div onClick$={() => custom.value.inc()}>{custom.value.n}</div>;
+});
+```
+
+When using a Signal as the data to create the object, you need to pass the configuration as a function, and you can then also provide the `update` function to update the object when the signal changes.
+
+By returning an object from `update`, you signal that the listeners have to be notified. You can mutate the current object but you should return it so that it will trigger listeners.
+
+```tsx
+const Cmp = component$(() => {
+  const n = useSignal(2);
+  const custom = useSerializer$(() => ({
+    deserialize: () => new MyCustomSerializable(n.value),
+    update: (current) => {
+      current.n = n.value;
+      return current;
+    },
+  }));
+  return <div onClick$={() => n.value++}>{custom.value.n}</div>;
+});
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-serializer.ts)
+
+<h2 id="useserverdata">useServerData</h2>
+
+Reads a value from the `serverData` passed to the server render.
+
+Use it in a component that renders on the server to read data handed to the render call, such as the `serverData` option of `renderToStream()`. Qwik Router fills it with request details like `url`, `requestHeaders`, `locale` and `nonce`. This is a low-level API that most apps don't need.
+
+### Example
+
+```tsx
+import { component$, useServerData } from "@qwik.dev/core";
+
+export const InlineScript = component$(() => {
+  const nonce = useServerData<string>("nonce");
+  return <script nonce={nonce}>console.log('hello');</script>;
+});
+```
+
+The `nonce` is read on the server while the component renders. Server data is not serialized, so values like `nonce` or `url` are not available after the app resumes in the browser: copy anything the client needs into a store, a signal or a context during SSR.
+
+It isn't meant for `routeLoader$`, `onStaticGenerate` or other code that runs outside rendering; use module-scoped data or `requestEvent.sharedMap` there instead.
+
+```typescript
+export declare function useServerData<T>(key: string): T | undefined;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+key
+
+</td><td>
+
+string
+
+</td><td>
+
+The `serverData` key to read.
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+T \| undefined
+
+The value for `key`, or `undefined` when it isn't set.
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-env-data.ts)
+
+<h2 id="usesignal-variable">useSignal</h2>
+
+Creates an object with a single reactive `.value` property, that Qwik can track across serializations.
+
+Use it to create state for your application. The object has a getter and setter to track reads and writes of the `.value` property. When the value changes, any functions that read from it will re-run.
+
+Prefer `useSignal` over `useStore` when possible, as it is more efficient.
+
+### Example
+
+```tsx
+const Signals = component$(() => {
+  const counter = useSignal(1);
+  const text = useSignal('changeme');
+  const toggle = useSignal(false);
+
+  // useSignal() can also accept a function to calculate the initial value
+  const state = useSignal(() => {
+    return expensiveInitialValue();
+  });
+
+  return (
+    <div>
+      <button onClick$={() => counter.value++}>Counter: {counter.value}</button>
+      {
+        // pass signal values as the value, the optimizer will make it pass the signal
+      }
+      <Child state={state.value} />
+      {
+        // signals can be bound to inputs. A property named `bind:x` implies that the property
+is a signal
+      }
+      <input type="text" bind:value={text} />
+      <input type="checkbox" bind:checked={toggle} />
+    </div>
+  );
+});
+```
+
+```typescript
+useSignal: UseSignal;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-signal.ts)
+
+<h2 id="usesignal-interface">UseSignal</h2>
+
+Creates an object with a single reactive `.value` property, that Qwik can track across serializations.
+
+Use it to create state for your application. The object has a getter and setter to track reads and writes of the `.value` property. When the value changes, any functions that read from it will re-run.
+
+Prefer `useSignal` over `useStore` when possible, as it is more efficient.
+
+### Example
+
+```tsx
+const Signals = component$(() => {
+  const counter = useSignal(1);
+  const text = useSignal('changeme');
+  const toggle = useSignal(false);
+
+  // useSignal() can also accept a function to calculate the initial value
+  const state = useSignal(() => {
+    return expensiveInitialValue();
+  });
+
+  return (
+    <div>
+      <button onClick$={() => counter.value++}>Counter: {counter.value}</button>
+      {
+        // pass signal values as the value, the optimizer will make it pass the signal
+      }
+      <Child state={state.value} />
+      {
+        // signals can be bound to inputs. A property named `bind:x` implies that the property
+is a signal
+      }
+      <input type="text" bind:value={text} />
+      <input type="checkbox" bind:checked={toggle} />
+    </div>
+  );
+});
+```
+
+```typescript
+useSignal: UseSignal;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-signal.ts)
+
+<h2 id="usestore">useStore</h2>
+
+Creates a reactive object that Qwik can track across serialization.
+
+Use it to create state for your application. The returned object is a Proxy that tracks reads and writes. When any of the properties change, the functions that read those properties will re-run.
+
+`Store`s are deep by default, meaning that any objects assigned to properties will also become `Store`s. This includes arrays.
+
+Prefer `useSignal` over `useStore` when possible, as it is more efficient.
+
+### Example
+
+Example showing how `useStore` is used in Counter example to keep track of the count.
+
+```tsx
+const Stores = component$(() => {
+  const counter = useCounter(1);
+
+  // Reactivity happens even for nested objects and arrays
+  const userData = useStore({
+    name: "Manu",
+    address: {
+      address: "",
+      city: "",
+    },
+    orgs: [],
+  });
+
+  // useStore() can also accept a function to calculate the initial value
+  const state = useStore(() => {
+    return {
+      value: expensiveInitialValue(),
+    };
+  });
+
+  return (
+    <div>
+      <div>Counter: {counter.value}</div>
+      <Child userData={userData} state={state} />
+    </div>
+  );
+});
+
+function useCounter(step: number) {
+  // Multiple stores can be created in custom hooks for convenience and composability
+  const counterStore = useStore({
+    value: 0,
+  });
+  useVisibleTask$(() => {
+    // Only runs in the client
+    const timer = setInterval(() => {
+      counterStore.value += step;
+    }, 500);
+    return () => {
+      clearInterval(timer);
+    };
+  });
+  return counterStore;
+}
+```
+
+```typescript
+useStore: <STATE extends object>(
+  initialState: STATE | (() => STATE),
+  opts?: UseStoreOptions,
+) => STATE;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+initialState
+
+</td><td>
+
+STATE \| (() =&gt; STATE)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+opts
+
+</td><td>
+
+[UseStoreOptions](#usestoreoptions)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+STATE
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-store.public.ts)
+
+<h2 id="usestoreoptions">UseStoreOptions</h2>
+
+```typescript
+export interface UseStoreOptions
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+deep?
+
+</td><td>
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_ If `true` then all nested objects and arrays will be tracked as well. Default is `true`.
+
+</td></tr>
+<tr><td>
+
+reactive?
+
+</td><td>
+
+</td><td>
+
+boolean
+
+</td><td>
+
+_(Optional)_ If `false` then the object will not be tracked for changes. Default is `true`.
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-store.public.ts)
+
+<h2 id="usestyles_">useStyles$</h2>
+
+A lazy-loadable reference to a component's styles.
+
+Component styles allow Qwik to lazy load the style information for the component only when needed. (And avoid double loading it in case of SSR hydration.)
+
+```tsx
+import styles from "./code-block.css?inline";
+
+export const CmpStyles = component$(() => {
+  useStyles$(styles);
+
+  return <div>Some text</div>;
+});
+```
+
+```typescript
+useStyles$: (qrl: string) => UseStyles;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+qrl
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+UseStyles
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-styles.ts)
+
+<h2 id="usestylesscoped">UseStylesScoped</h2>
+
+```typescript
+export interface UseStylesScoped
+```
+
+<table><thead><tr><th>
+
+Property
+
+</th><th>
+
+Modifiers
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+scopeId
+
+</td><td>
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-styles.ts)
+
+<h2 id="usestylesscoped_">useStylesScoped$</h2>
+
+A lazy-loadable reference to a component's styles, that is scoped to the component.
+
+Component styles allow Qwik to lazy load the style information for the component only when needed. (And avoid double loading it in case of SSR hydration.)
+
+```tsx
+import scoped from "./code-block.css?inline";
+
+export const CmpScopedStyles = component$(() => {
+  useStylesScoped$(scoped);
+
+  return <div>Some text</div>;
+});
+```
+
+```typescript
+useStylesScoped$: (qrl: string) => UseStylesScoped;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+qrl
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+[UseStylesScoped](#usestylesscoped)
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-styles.ts)
+
+<h2 id="usetask_">useTask$</h2>
+
+Reruns the `taskFn` when the observed inputs change.
+
+Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when those inputs change.
+
+The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs` function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to rerun.
+
+Cleanup callbacks registered with `cleanup()` or returned from the task may be async. When a task reruns, Qwik waits for the previous cleanup to finish before starting the next invocation.
+
+During SSR, the cleanup function is called immediately after SSR completes. Therefore, it is not called on the client side after resuming, but only the second time the task runs on the client.
+
+```typescript
+useTask$: (fn: TaskFn, opts?: TaskOptions) => void
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+fn
+
+</td><td>
+
+[TaskFn](#taskfn)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+opts
+
+</td><td>
+
+[TaskOptions](#taskoptions)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-task-dollar.ts)
+
+<h2 id="usevisibletask_">useVisibleTask$</h2>
+
+```tsx
+const Timer = component$(() => {
+  const store = useStore({
+    count: 0,
+  });
+
+  useVisibleTask$(() => {
+    // Only runs in the client
+    const timer = setInterval(() => {
+      store.count++;
+    }, 500);
+    return () => {
+      clearInterval(timer);
+    };
+  });
+
+  return <div>{store.count}</div>;
+});
+```
+
+Visible Tasks are a variant of Tasks that only run in the browser, and are registered but not executed during SSR. They are useful for running code that should only execute in the browser, such as code that interacts with the DOM or browser APIs.
+
+Cleanup callbacks registered with `cleanup()` or returned from the task may be async. When a visible task reruns, Qwik waits for the previous cleanup to finish before starting the next invocation.
+
+```typescript
+useVisibleTask$: (fn: TaskFn, opts?: OnVisibleTaskOptions) => void
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+fn
+
+</td><td>
+
+[TaskFn](#taskfn)
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+opts
+
+</td><td>
+
+[OnVisibleTaskOptions](#onvisibletaskoptions)
+
+</td><td>
+
+_(Optional)_
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-visible-task-dollar.ts)
+
+<h2 id="valueorpromise">ValueOrPromise</h2>
+
+Type representing a value which is either resolve or a promise.
+
+```typescript
+export type ValueOrPromise<T> = T | Promise<T>;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/shared/utils/types.ts)
+
+<h2 id="version">version</h2>
+
+QWIK_VERSION
+
+```typescript
+version: string;
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/version.ts)
+
+<h2 id="visibletaskstrategy">VisibleTaskStrategy</h2>
+
+```typescript
+export type VisibleTaskStrategy =
+  | "intersection-observer"
+  | "document-ready"
+  | "document-idle";
+```
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-visible-task.ts)
+
+<h2 id="withlocale">withLocale</h2>
+
+Override the `getLocale` with `lang` within the `fn` execution.
+
+`fn` may be async. The locale stays set until the returned promise settles, even when AsyncLocalStorage is not available.
+
+```typescript
+export declare function withLocale<T>(locale: string, fn: () => T): T;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+locale
+
+</td><td>
+
+string
+
+</td><td>
+
+</td></tr>
+<tr><td>
+
+fn
+
+</td><td>
+
+() =&gt; T
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+T
+
+[Edit this section](https://github.com/QwikDev/qwik/tree/main/packages/qwik/src/core/use/use-locale.ts)
+
+<h2 id="ssrstreamwriter-write">write</h2>
+
+```typescript
+write(chunk: JSXOutput): void;
+```
+
+<table><thead><tr><th>
+
+Parameter
+
+</th><th>
+
+Type
+
+</th><th>
+
+Description
+
+</th></tr></thead>
+<tbody><tr><td>
+
+chunk
+
+</td><td>
+
+[JSXOutput](#jsxoutput)
+
+</td><td>
+
+</td></tr>
+</tbody></table>
+
+**Returns:**
+
+void

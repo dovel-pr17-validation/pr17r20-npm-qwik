@@ -1,0 +1,197 @@
+@reference "tailwindcss";
+
+.docs.api h1:not(.overview) {
+  font-size: 2rem;
+}
+
+.docs.api article h2 {
+  font-size: 1.25rem;
+  margin-top: 0;
+  width: 100%;
+}
+
+/* styling for sections on detail view */
+.docs.api h2:not(:not([id])) {
+  margin-top: 50px;
+  position: relative;
+  width: 100%;
+}
+.docs.api h2:not(:not([id])):not(:nth-of-type(1)) {
+  border-top: 1px solid var(--color-border-base);
+  padding-top: 50px;
+}
+
+.docs.api article a {
+  text-decoration: underline;
+}
+
+.docs.api h1 a,
+.docs.api table a {
+  text-decoration: none;
+}
+
+.docs.api article a[href*="github.com"] {
+  display: inline-block;
+  position: relative;
+  left: calc(100% - 115px);
+  border-radius: 4px;
+  background: var(--color-background-accent);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+
+.docs.api table {
+  font-size: 0.8rem;
+  border-radius: 8px;
+  box-shadow: 0 0 30px 0 color-mix(in srgb, var(--color-shadow-base) 20%, transparent);
+  margin-bottom: 20px;
+  overflow: hidden;
+  width: 100%;
+}
+.docs.api article thead tr {
+  background: var(--color-background-accent);
+  text-align: left;
+}
+.docs.api article thead tr p {
+  font-weight: bold;
+}
+.docs.api thead th,
+.docs.api tbody tr td {
+  padding: 12px 24px;
+}
+.docs.api tbody tr:hover,
+.docs.api tbody tr:nth-child(even) {
+  background: var(--color-background-accent);
+}
+
+.docs.api .section-title {
+  background: var(--color-background-accent);
+  display: flex;
+  font-weight: 100;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  position: relative;
+  margin-top: 0;
+  width: 100%;
+}
+@media screen and (min-width: 768px) {
+  .docs.api .section-title {
+    font-size: 1rem;
+  }
+}
+.docs.api .section-title:before {
+  content: attr(data-icon);
+  display: inline-grid;
+  justify-content: center;
+  align-content: center;
+  background: var(--color-primary-background-base);
+  border-radius: 4px 0 0 4px;
+  padding: 8px 0;
+  color: var(--color-primary-foreground-base);
+  min-width: 40px;
+  font-weight: 400;
+}
+.docs.api .section-title span {
+  padding: 8px;
+  display: inline-block;
+}
+@media screen and (min-width: 768px) {
+  .docs.api .section-title span {
+    padding: 8px 16px;
+  }
+}
+
+.docs.api h3 {
+  font-size: 1rem;
+  margin-top: 0;
+}
+
+.docs.api article a {
+  display: inline-block;
+  color: var(--color-foreground-base);
+  text-decoration: none;
+}
+
+.docs.api ul {
+  margin: 0;
+}
+
+.docs.api ul li.api-item {
+  padding: 0;
+}
+
+.api-detail-section {
+  padding: 50px 0;
+  border-bottom: 1px solid var(--color-border-base);
+  position: relative;
+}
+
+.docs.api .api-edit {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  margin: 0px;
+}
+.docs.api .api-edit a {
+  font-size: 0.8rem;
+  background: var(--color-background-accent);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.docs.api .filter-item {
+  background: var(--color-background-accent);
+  line-height: 2;
+}
+@media screen and (min-width: 768px) {
+  .docs.api .filter-item {
+    line-height: 1.5;
+  }
+}
+.docs.api .filter-item[data-kind-label]:before {
+  border-radius: 4px 0 0 4px;
+}
+.docs.api .filter-item[data-kind-label]:not(.active):before {
+  background: var(--color-background-disabled);
+  color: var(--color-foreground-disabled);
+}
+
+.docs.api [data-kind-label]:before {
+  content: attr(data-kind-label);
+  border-radius: 4px;
+  color: var(--color-primary-foreground-base);
+  background: var(--color-primary-background-base);
+  display: inline-block;
+  margin-right: 8px;
+  text-align: center;
+  min-width: 32px; /* ensure the label is always the same width on the overview */
+  padding: 2px 10px;
+}
+
+.docs.api [data-kind-label="V"]:before {
+  background: var(--color-violet-65);
+}
+.docs.api [data-kind-label="P"]:before {
+  background: var(--color-sky-65);
+}
+.docs.api [data-kind-label="I"]:before {
+    background: var(--color-sky-80);
+}
+.docs.api [data-kind-label="T"]:before {
+    background: var(--color-violet-80);
+}
+.docs.api [data-kind-label="M"]:before {
+    background: #c3ba4c;
+}
+.docs.api [data-kind-label="F"]:before {
+    background: #5bc0de;
+}
+.docs.api [data-kind-label="N"]:before {
+    background: #5cb85c;
+}
+.docs.api .table-wrapper {
+  overflow-x: auto;
+}

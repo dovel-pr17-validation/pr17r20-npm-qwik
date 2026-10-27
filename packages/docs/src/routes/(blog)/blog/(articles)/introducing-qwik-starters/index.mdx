@@ -1,0 +1,131 @@
+---
+title: 'Introducing Qwik starters - get up and running with Qwik now'
+authors:
+  - 'Miško Hevery'
+tags: ['Qwik']
+date: 'December 14, 2021'
+canonical: 'https://www.builder.io/blog/introducing-qwik-starters'
+---
+
+import { ArticleBlock } from '~/routes/(blog)/blog/components/mdx/article-block';
+import CodeSandbox from '~/components/code-sandbox/index.tsx';
+import { Image } from 'qwik-image';
+import img1 from './img-1.webp';
+import img2 from './img-2.webp';
+import img3 from './img-3.webp';
+import img4 from './img-4.webp';
+
+<ArticleBlock>
+
+Nothing is more satisfying than playing with code and discovering new things! Yes, it is finally here, `npm init qwik` for you to try and discover a different way to build web apps that stay lean and performant no matter their size. It is the same technology that is powering [builder.io](https://www.builder.io) and gets [100/100 PageSpeed](https://www.builder.io/blog/how-we-cut-99-percent-js-with-qwik-and-partytown).
+
+Qwik starter CLI is a simple starter for you to try experimenting with Qwik first hand and to get a better understanding of just how different it is.
+
+The CLI consist of these four examples, that will be expanded in the near future:
+
+1.  `starter`: A basic hello world.
+2.  `starter-builder`: A basic hello world integrated with Builder's [Qwik API](https://www.builder.io/c/docs/qwik-api).
+3.  `starter-partytown`: A basic hello world showing how expensive tasks can be run on web-worker with [Partytown](https://github.com/QwikDev/partytown)
+4.  `todo`: A classic [TodoMVC](https://todomvc.com/) application.
+
+## Basic Starter
+
+```shell
+> npm init qwik
+💫 Let's create a Qwik project 💫
+
+✔ Project name … qwik-starter
+✔ Select a starter › Starter
+✔ Select a server › Express
+
+⭐️ Success! Project saved in qwik-starter directory
+
+📟 Next steps:
+  cd qwik-starter
+  npm install
+  npm start
+
+> (cd qwik-starter; npm install; npm start)
+```
+
+<Image class="w-full" src={img1} alt="starter app" />
+
+Try it in [StackBlitz](https://stackblitz.com/edit/qwik-starter).
+
+## Starter with Builder Qwik API
+
+```shell
+> npm init qwik
+💫 Let's create a Qwik project 💫
+
+✔ Project name … qwik-builder
+✔ Select a starter › Starter Builder
+✔ Select a server › Express
+
+⭐️ Success! Project saved in qwik-builder directory
+
+📟 Next steps:
+  cd qwik-builder
+  npm install
+  npm start
+
+> (cd qwik-builder; npm install; npm start)
+```
+
+<Image class="w-full" src={img2} alt="qwik builder app" />
+
+Try it in [StackBlitz](https://stackblitz.com/edit/qwik-todo-builder).
+
+## Starter with Partytown
+
+```shell
+> npm init qwik
+💫 Let's create a Qwik project 💫
+
+✔ Project name … qwik-partytown
+✔ Select a starter › Starter Partytown
+✔ Select a server › Express
+
+⭐️ Success! Project saved in qwik-partytown directory
+
+📟 Next steps:
+  cd qwik-partytown
+  npm install
+  npm start
+
+> (cd qwik-partytown; npm install; npm start)
+```
+
+<Image class="w-full" src={img3} alt="qwik partytown app" />
+
+## Classic TodoMVC
+
+```shell
+> npm init qwik
+💫 Let's create a Qwik project 💫
+
+✔ Project name … qwik-todo
+✔ Select a starter › Todo
+✔ Select a server › Express
+
+⭐️ Success! Project saved in qwik-todo directory
+
+📟 Next steps:
+  cd qwik-todo
+  npm install
+  npm start
+
+> (cd qwik-todo; npm install; npm start)
+```
+
+<Image class="w-full" src={img4} alt="qwik todo app" />
+
+Try it in [StackBlitz](https://stackblitz.com/edit/qwik-todo-demo).
+
+## Profile away
+
+We encourage you to open the dev tools and put all of the examples through the profiler to see how little time is spent on the main thread.
+
+Happy coding and please provide feedback 🚀
+
+</ArticleBlock>

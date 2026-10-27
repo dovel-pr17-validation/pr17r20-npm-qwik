@@ -1,0 +1,174 @@
+import type { VNode } from '../vnode/vnode';
+import { isCursor, type Cursor } from './cursor';
+import { removeCursorFromQueue } from './cursor-queue';
+import type { Container } from '../types';
+import type { VNodeJournal } from '../../client/vnode-utils';
+import type { Task } from '../../use/use-task';
+import type { CursorBoundary } from '../../use/use-cursor-boundary';
+import { registerSingleton } from '../singletons';
+
+export const cursorDatas = /*#__PURE__*/ registerSingleton(
+  'cursorDatas',
+  () => new WeakMap<Cursor, CursorData>()
+);
+
+/** Key used to store pending node prop updates in vNode props. */
+export const NODE_PROPS_DATA_KEY = ':nodeProps';
+export const NODE_DIFF_DATA_KEY = ':nodeDiff';
+export const ERROR_DATA_KEY = ':errorData';
+export const HOST_SIGNAL = ':signal';
+export const INLINE_COMPONENT_DATA_KEY = ':inlineComponentData';
+
+/** Qwik loader events to (re)register once the cursor's journal is flushed to the DOM. */
+const pendingQwikLoaderEvents = /*#__PURE__*/ registerSingleton(
+  'pendingQwikLoaderEvents',
+  () => new WeakMap<CursorData, string[]>()
+);
+
+export function queueQwikLoaderEvent(cursorData: CursorData, eventName: string): void {
+  let loaderEvents = pendingQwikLoaderEvents.get(cursorData);
+  if (!loaderEvents) {
+    pendingQwikLoaderEvents.set(cursorData, (loaderEvents = []));
+  }
+  if (!loaderEvents.includes(eventName)) {
+    loaderEvents.push(eventName);
+  }
+}
+
+export function getPendingQwikLoaderEvents(cursorData: CursorData): string[] | undefined {
+  const loaderEvents = pendingQwikLoaderEvents.get(cursorData);
+  if (loaderEvents) {
+    pendingQwikLoaderEvents.delete(cursorData);
+  }
+  return loaderEvents;
+}
+
+export interface CursorData {
+  afterFlushTasks: Task[] | null;
+  extraPromises: Promise<void>[] | null;
+  journal: VNodeJournal | null;
+  container: Container;
+  position: VNode | null;
+  priority: number;
+  promise: Promise<void> | null;
+  boundaries: CursorBoundary[] | null;
+}
+
+/**
+ * Sets the cursor position in a cursor vNode.
+ *
+ * @param vNode - The cursor vNode
+ * @param position - The vNode position to set, or null for root
+ */
+export function setCursorPosition(
+  container: Container,
+  cursorData: CursorData,
+  position: VNode | null
+): void {
+  cursorData.position = position;
+  if (position && isCursor(position)) {
+    mergeCursors(container, cursorData, position);
+  }
+}
+
+export function mergeCursors(
+  container: Container,
+  newCursorData: CursorData,
+  oldCursor: VNode
+): void {
+  const oldCursorData = getCursorData(oldCursor);
+  if (!oldCursorData || oldCursorData === newCursorData) {
+    return;
+  }
+
+  // delete from global cursors queue
+  removeCursorFromQueue(oldCursor, container);
+  mergeCursorData(newCursorData, oldCursorData);
+}
+
+export function mergeCursorData(newCursorData: CursorData, oldCursorData: CursorData): void {
+  if (oldCursorData === newCursorData) {
+    // same cursor data, no need to merge
+    return;
+  }
+
+  // merge after flush tasks
+  const oldAfterFlushTasks = oldCursorData.afterFlushTasks;
+  if (oldAfterFlushTasks && oldAfterFlushTasks.length > 0) {
+    const newAfterFlushTasks = newCursorData.afterFlushTasks;
+    if (newAfterFlushTasks) {
+      newAfterFlushTasks.push(...oldAfterFlushTasks);
+    } else {
+      newCursorData.afterFlushTasks = oldAfterFlushTasks;
+    }
+  }
+  // merge qwik loader event notifications
+  const oldLoaderEvents = getPendingQwikLoaderEvents(oldCursorData);
+  if (oldLoaderEvents) {
+    for (let i = 0; i < oldLoaderEvents.length; i++) {
+      queueQwikLoaderEvent(newCursorData, oldLoaderEvents[i]);
+    }
+  }
+  // merge extra promises
+  const oldExtraPromises = oldCursorData.extraPromises;
+  if (oldExtraPromises && oldExtraPromises.length > 0) {
+    const newExtraPromises = newCursorData.extraPromises;
+    if (newExtraPromises) {
+      newExtraPromises.push(...oldExtraPromises);
+    } else {
+      newCursorData.extraPromises = oldExtraPromises;
+    }
+  }
+  mergeCursorJournalAndBoundaries(newCursorData, oldCursorData);
+}
+
+export function mergeCursorJournalAndBoundaries(
+  newCursorData: CursorData,
+  oldCursorData: CursorData
+): void {
+  if (oldCursorData === newCursorData) {
+    return;
+  }
+
+  // merge journal
+  const oldJournal = oldCursorData.journal;
+  if (oldJournal && oldJournal.length > 0) {
+    const newJournal = newCursorData.journal;
+    if (newJournal) {
+      newJournal.push(...oldJournal);
+    } else {
+      newCursorData.journal = oldJournal;
+    }
+  }
+  // merge cursor boundaries
+  const oldBoundaries = oldCursorData.boundaries;
+  if (__EXPERIMENTAL__.pendingBoundary && oldBoundaries && oldBoundaries.length > 0) {
+    const newBoundaries = (newCursorData.boundaries ||= []);
+    for (let i = 0; i < oldBoundaries.length; i++) {
+      const boundary = oldBoundaries[i];
+      if (!newBoundaries.includes(boundary)) {
+        newBoundaries.push(boundary);
+      }
+    }
+  }
+}
+
+/**
+ * Gets the cursor data from a vNode.
+ *
+ * @param vNode - The vNode
+ * @returns The cursor data, or null if none or not a cursor
+ */
+export function getCursorData(vNode: VNode): CursorData | null {
+  return cursorDatas.get(vNode) ?? null;
+}
+
+/**
+ * Sets the cursor data on a vNode.
+ *
+ * @param vNode - The vNode
+ * @param cursorData - The cursor data to set, or null to clear
+ */
+export function setCursorData(vNode: VNode, cursorData: CursorData): void {
+  cursorDatas.set(vNode as Cursor, cursorData!);
+}

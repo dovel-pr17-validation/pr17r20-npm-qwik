@@ -1,0 +1,291 @@
+import { describe, it, expect, vi } from 'vitest';
+import { formToObj } from './request-event-core';
+
+describe('formToObj', () => {
+  it('retains nested form paths linearly', () => {
+    const depth = 128;
+    const fd = new FormData();
+    fd.append(Array(depth).fill('a').join('.'), 'value');
+    const mapSet = vi.spyOn(Map.prototype, 'set');
+
+    const obj = formToObj(fd);
+    let retainedKeyCharacters = 0;
+    for (let i = 0; i < mapSet.mock.calls.length; i++) {
+      const key = mapSet.mock.calls[i][0];
+      if (typeof key === 'string') {
+        retainedKeyCharacters += key.length;
+      }
+    }
+    mapSet.mockRestore();
+
+    expect(retainedKeyCharacters).toBeLessThanOrEqual(depth);
+    let value = obj;
+    for (let i = 0; i < depth; i++) {
+      value = value.a;
+    }
+    expect(value).toBe('value');
+  });
+
+  describe('Object prototype pollution', () => {
+    it.each([
+      ['string', '1'],
+      ['empty string', ''],
+      ['file', new File(['1'], 'test.txt')],
+    ])('does not traverse %s form values', (_, value) => {
+      const methods = [
+        Object.prototype.hasOwnProperty,
+        Object.prototype.toString,
+        String.prototype.toString,
+      ];
+      const originalCalls = methods.map((method) =>
+        Object.getOwnPropertyDescriptor(method, 'call')
+      );
+      const fd = new FormData();
+      fd.append('a', value);
+      fd.append('a.hasOwnProperty.call', 'x');
+      fd.append('a.toString.call', 'x');
+      fd.append('items[]', value);
+      fd.append('items.0.hasOwnProperty.call', 'x');
+      fd.append('items.0.toString.call', 'x');
+      fd.append('safe', 'ok');
+
+      let obj: Record<string, any>;
+      let actualCalls: (PropertyDescriptor | undefined)[];
+      try {
+        obj = formToObj(fd);
+        actualCalls = methods.map((method) => Object.getOwnPropertyDescriptor(method, 'call'));
+      } finally {
+        // Restore shared functions before assertions or test reporting.
+        methods.forEach((method, i) => {
+          const descriptor = originalCalls[i];
+          if (descriptor) {
+            Object.defineProperty(method, 'call', descriptor);
+          } else {
+            Reflect.deleteProperty(method, 'call');
+          }
+        });
+      }
+
+      expect(actualCalls).toEqual(originalCalls);
+      expect(obj.a).toBe(value);
+      expect(obj.items).toEqual([value]);
+      expect(obj.safe).toBe('ok');
+    });
+
+    it('ignores child fields of existing form values', () => {
+      const file = new File(['contents'], 'test.txt');
+      const fd = new FormData();
+      fd.append('a', '1');
+      fd.append('a.b', '2');
+      fd.append('file', file);
+      fd.append('file.name', 'changed.txt');
+      fd.append('safe', 'ok');
+
+      const obj = formToObj(fd);
+
+      expect(obj.a).toBe('1');
+      expect(obj.file).toBe(file);
+      expect(file.name).toBe('test.txt');
+      expect(obj.safe).toBe('ok');
+    });
+
+    it('blocks __proto__ pollution via dotted notation', () => {
+      delete (Object.prototype as any).polluted;
+
+      const fd = new FormData();
+      fd.append('__proto__.polluted', '1');
+
+      formToObj(fd);
+
+      expect(({} as any).polluted).toBeUndefined();
+
+      delete (Object.prototype as any).polluted;
+    });
+
+    it('blocks __proto__[] pollution via array notation', () => {
+      delete (Object.prototype as any).polluted;
+
+      const fd = new FormData();
+      fd.append('__proto__[]', 'x');
+
+      const res = formToObj(fd);
+
+      expect(({} as any).polluted).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(res, '__proto__')).toBe(false);
+
+      delete (Object.prototype as any).polluted;
+    });
+
+    it('uses Object.create(null) for root object', () => {
+      const fd = new FormData();
+      fd.append('__proto__.polluted', 'yes');
+      fd.append('normal', 'ok');
+
+      const obj = formToObj(fd);
+
+      expect((Object.prototype as any).polluted).toBeUndefined();
+
+      expect((obj as any).polluted).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(obj, '__proto__')).toBe(false);
+
+      expect(obj.normal).toBe('ok');
+
+      expect(Object.getPrototypeOf(obj)).toBeNull();
+    });
+
+    it('blocks constructor pollution attempts', () => {
+      const fd = new FormData();
+      fd.append('constructor.polluted', 'bad');
+      fd.append('safe', 'good');
+
+      const obj = formToObj(fd);
+
+      expect((obj as any).polluted).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(obj, 'constructor')).toBe(false);
+      expect(obj.safe).toBe('good');
+    });
+
+    it('blocks prototype pollution attempts', () => {
+      const fd = new FormData();
+      fd.append('prototype.polluted', 'bad');
+      fd.append('safe', 'good');
+
+      const obj = formToObj(fd);
+
+      expect((obj as any).polluted).toBeUndefined();
+      expect(Object.prototype.hasOwnProperty.call(obj, 'prototype')).toBe(false);
+      expect(obj.safe).toBe('good');
+    });
+
+    it('blocks nested dangerous keys in middle of path', () => {
+      const fd = new FormData();
+      fd.append('user.__proto__.isAdmin', 'true');
+      fd.append('user.name', 'alice');
+
+      const obj = formToObj(fd);
+
+      // The dangerous entry is skipped
+      expect((obj as any).isAdmin).toBeUndefined();
+      expect((Object.prototype as any).isAdmin).toBeUndefined();
+      expect(obj.user?.isAdmin).toBeUndefined();
+
+      // The safe entry is processed normally
+      expect(obj.user?.name).toBe('alice');
+    });
+
+    it('blocks constructor[] array notation', () => {
+      const fd = new FormData();
+      fd.append('constructor[]', 'bad');
+      fd.append('safe', 'good');
+
+      const obj = formToObj(fd);
+
+      expect(Object.prototype.hasOwnProperty.call(obj, 'constructor')).toBe(false);
+      expect(obj.safe).toBe('good');
+    });
+
+    it('blocks prototype[] array notation', () => {
+      const fd = new FormData();
+      fd.append('prototype[]', 'bad');
+      fd.append('safe', 'good');
+
+      const obj = formToObj(fd);
+
+      expect(Object.prototype.hasOwnProperty.call(obj, 'prototype')).toBe(false);
+      expect(obj.safe).toBe('good');
+    });
+
+    it('handles nested objects without creating {} with prototype', () => {
+      const fd = new FormData();
+      fd.append('user.profile.name', 'alice');
+
+      const obj = formToObj(fd);
+
+      expect(Object.getPrototypeOf(obj)).toBeNull();
+      expect(Object.getPrototypeOf(obj.user)).toBeNull();
+      expect(Object.getPrototypeOf(obj.user.profile)).toBeNull();
+      expect(obj.user.profile.name).toBe('alice');
+    });
+  });
+
+  describe('Array parsing', () => {
+    it('creates arrays only for canonical non-negative integer keys', () => {
+      const fd = new FormData();
+      fd.append('items.0', 'apple');
+      fd.append('items.1', 'banana');
+      fd.append('notArray.-1', 'neg');
+      fd.append('alsoNotArray.01', 'leading-zero');
+      fd.append('stillNotArray.1e2', 'scientific');
+
+      const obj = formToObj(fd);
+
+      expect(Array.isArray(obj.items)).toBe(true);
+      expect(obj.items).toEqual(['apple', 'banana']);
+
+      expect(Array.isArray(obj.notArray)).toBe(false);
+      expect(obj.notArray['-1']).toBe('neg');
+
+      expect(Array.isArray(obj.alsoNotArray)).toBe(false);
+      expect(obj.alsoNotArray['01']).toBe('leading-zero');
+
+      expect(Array.isArray(obj.stillNotArray)).toBe(false);
+      expect(obj.stillNotArray['1e2']).toBe('scientific');
+    });
+
+    it('limits inferred array indexes', () => {
+      const fd = new FormData();
+      fd.append('allowed.9999', 'value');
+      fd.append('excessive.10000', 'value');
+      fd.append('items.4294967294', 'value');
+
+      const obj = formToObj(fd);
+
+      expect(Array.isArray(obj.allowed)).toBe(true);
+      expect(obj.allowed.length).toBe(10_000);
+      expect(Array.isArray(obj.excessive)).toBe(false);
+      expect(obj.excessive['10000']).toBe('value');
+      expect(Array.isArray(obj.items)).toBe(false);
+      expect(obj.items['4294967294']).toBe('value');
+    });
+
+    it('keeps object syntax object-shaped when sibling keys are mixed', () => {
+      const fd = new FormData();
+      fd.append('items.0', 'apple');
+      fd.append('items.1', 'banana');
+      fd.append('items.hello', 'there');
+
+      const obj = formToObj(fd);
+
+      expect(Array.isArray(obj.items)).toBe(false);
+      expect(obj.items[0]).toBe('apple');
+      expect(obj.items[1]).toBe('banana');
+      expect(obj.items.hello).toBe('there');
+    });
+
+    it('ignores non-integer keys on arrays', () => {
+      const fd = new FormData();
+      fd.append('items.0', 'apple');
+      fd.append('items.1', 'banana');
+      fd.append('items.hello', 'there');
+
+      const obj = formToObj(fd);
+
+      expect(Array.isArray(obj.items)).toBe(false);
+      expect(obj.items[0]).toBe('apple');
+      expect(obj.items[1]).toBe('banana');
+      expect(obj.items.hello).toBe('there');
+    });
+
+    it('still supports explicit [] syntax for arrays', () => {
+      const fd = new FormData();
+      fd.append('items[]', 'apple');
+      fd.append('items[]', 'banana');
+
+      const obj = formToObj(fd);
+
+      expect(Array.isArray(obj.items)).toBe(true);
+      expect(obj.items).toEqual(['apple', 'banana']);
+      expect(obj.items.length).toBe(2);
+    });
+  });
+});

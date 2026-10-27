@@ -1,0 +1,185 @@
+import { implicit$FirstArg } from '../shared/qrl/implicit_dollar';
+import type { ComputeCtx, ComputedOptions, SerializerArg } from './types';
+import {
+  createSignal as _createSignal,
+  createComputedSignal as createComputedQrl,
+  createSerializerSignal as createSerializerQrl,
+  createAsyncSignal as createAsyncQrl,
+} from './signal-api';
+import type { ComputedReturnType } from '../use/use-computed';
+import type { ValueOrPromise } from '../shared/utils/types';
+export { isSignal } from './utils';
+
+/**
+ * @deprecated Use `Readonly<Signal<T>>` instead.
+ * @public
+ */
+export interface ReadonlySignal<T = unknown> {
+  readonly value: T;
+}
+
+/**
+ * A signal is a reactive value which can be read and written. When the signal is written, all tasks
+ * which are tracking the signal will be re-run and all components that read the signal will be
+ * re-rendered.
+ *
+ * Furthermore, when a signal value is passed as a prop to a component, the optimizer will
+ * automatically forward the signal. This means that `return <div title={signal.value}>hi</div>`
+ * will update the `title` attribute when the signal changes without having to re-render the
+ * component.
+ *
+ * @public
+ */
+export interface Signal<T = any> {
+  /** Reading from this subscribes to updates; writing to this triggers updates. */
+  value: T;
+  /** Reading from this does not subscribe to updates; writing to this does not trigger updates. */
+  untrackedValue: T;
+  /**
+   * Use this to trigger running subscribers, for example when the value mutated but remained the
+   * same object.
+   */
+  trigger(): void;
+}
+
+/**
+ * A computed signal is a signal which is calculated from other signals. When the signals change,
+ * the computed signal is recalculated, and if the result changed, all tasks which are tracking the
+ * signal will be re-run and all components that read the signal will be re-rendered.
+ *
+ * @public
+ */
+export interface ComputedSignal<T> extends Signal<T> {
+  /**
+   * Whether the signal is currently loading. Reading it starts a lazy computation if needed.
+   *
+   * @experimental
+   */
+  pending: boolean;
+  /**
+   * The computation error, if any. Reading it starts a lazy computation if needed. While set,
+   * reading `.value` throws the error.
+   *
+   * @experimental
+   */
+  error: Error | undefined;
+  /** @deprecated Use `trigger()` instead */
+  force(): void;
+  /** Use this to force recalculation. */
+  invalidate(): void;
+  /**
+   * Clear the value and recompute. Unlike `invalidate()`, readers see the loading state (reads
+   * throw the computation promise) instead of the stale value while the new value computes.
+   */
+  clear(): void;
+  /** A promise that resolves when the value is computed or rejected. */
+  promise(): Promise<void>;
+  /** Abort the current computation and run cleanups if needed. */
+  abort(reason?: any): void;
+  /**
+   * Use this to force recalculation. If you pass `info`, it will be provided to the calculation
+   * function.
+   */
+  invalidate(info?: unknown): void;
+}
+
+/**
+ * A computed signal with its pending and error state exposed.
+ *
+ * @internal
+ */
+export interface ComputedSignalInternal<T> extends ComputedSignal<T> {
+  /**
+   * Lets you read the pending state without subscribing to `.pending` updates. It also triggers
+   * lazy computation of the signal.
+   *
+   * Setting it will trigger listeners for `.pending`.
+   */
+  untrackedPending: boolean;
+  /** @deprecated Use `pending` instead */
+  loading: boolean;
+  /** @deprecated Use `untrackedPending` instead */
+  untrackedLoading: boolean;
+  /**
+   * Lets you read the error state without subscribing to `.error` updates. It also triggers lazy
+   * computation of the signal.
+   *
+   * Setting it will trigger listeners for `.error`.
+   */
+  untrackedError: Error | undefined;
+}
+
+/**
+ * A serializer signal holds a custom serializable value. See `useSerializer$` for more details.
+ *
+ * @public
+ */
+export interface SerializerSignal<T> extends ComputedSignal<T> {
+  /** Fake property to make the serialization linter happy */
+  __no_serialize__: true;
+}
+
+/**
+ * An AsyncSignal holds the result of the given async function. If the function uses `track()` to
+ * track reactive state, and that state changes, the AsyncSignal is recalculated, and if the result
+ * changed, all tasks which are tracking the AsyncSignal will be re-run and all subscribers
+ * (components, tasks etc) that read the AsyncSignal will be updated.
+ *
+ * If the value has not yet been resolved, reading the AsyncSignal will throw a Promise, which will
+ * retry the component or task once the value resolves.
+ *
+ * If the value has been resolved, but the async function is re-running, reading the AsyncSignal
+ * will subscribe to it and return the last resolved value until the new value is ready. As soon as
+ * the new value is ready, the subscribers will be updated.
+ *
+ * If the async function threw an error, reading the `.value` will throw that same error.
+ *
+ * @deprecated Use `ComputedSignal` instead, it has async support now.
+ * @public
+ */
+export type AsyncSignal<T = unknown> = ComputedSignal<T>;
+
+/**
+ * Creates a Signal with the given value. If no value is given, the signal is created with
+ * `undefined`.
+ *
+ * @public
+ */
+export const createSignal: {
+  <T>(): Signal<T | undefined>;
+  <T>(value: T): Signal<T>;
+} = _createSignal;
+
+/**
+ * Create a computed signal which is calculated from the given QRL. A computed signal is a signal
+ * which is calculated from other signals. When the signals change, the computed signal is
+ * recalculated.
+ *
+ * The QRL must be a function which returns the value of the signal. The function must not have side
+ * effects. Every synchronous signal or store read is tracked automatically; reads after the first
+ * `await` must use the `track()` provided on the context argument. When the function is async,
+ * reading an unresolved `.value` throws the computation promise, and reading a failed `.value`
+ * throws the error.
+ *
+ * @public
+ */
+export const createComputed$: <T>(
+  qrl: (ctx: ComputeCtx) => ValueOrPromise<T>,
+  options?: ComputedOptions<T>
+) => ComputedReturnType<T> = /*#__PURE__*/ implicit$FirstArg(createComputedQrl as any);
+export { createComputedQrl };
+
+export { createAsyncQrl };
+
+/**
+ * Create a signal that holds a custom serializable value. See {@link useSerializer$} for more
+ * details.
+ *
+ * @public
+ */
+export const createSerializer$: <T, S>(
+  arg: SerializerArg<T, S>
+) => T extends Promise<any> ? never : SerializerSignal<T> = implicit$FirstArg(
+  createSerializerQrl as any
+);
+export { createSerializerQrl };

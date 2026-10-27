@@ -1,0 +1,264 @@
+/**
+ * Phase 2: Hook Tracker Injection Injects collecthook calls after each hook usage to track hook
+ * state
+ */
+
+import { parseProgram, traverseProgram } from './traverse';
+import { findAllComponentBodyRangesFromProgram, isInsideComponentBody } from './componentBodies';
+import {
+  getNodeStart,
+  isAstNodeLike,
+  normalizeHookName,
+  getVariableIdentifierName,
+  isKnownHook,
+  normalizeQrlHookName,
+  buildCollecthookPayload,
+  hasCollecthookAfterByVariableId,
+  hasCollecthookAfterByVariableName,
+  trimStatementSemicolon,
+  isCustomHook,
+} from './helpers';
+import { INNER_USE_HOOK } from '@qwik.dev/devtools/kit';
+import type { InjectionTask, InsertTask } from './types';
+import { applySourceEdits } from './sourceEdits';
+
+// ============================================================================
+// Main Entry
+// ============================================================================
+
+/** Injects collecthook calls after each hook usage inside component$ bodies */
+export function injectHookTrackers(code: string): string {
+  const program = parseProgram(code);
+  // collecthook is declared only in component$ bodies; elsewhere it's unbound.
+  const componentBodies = findAllComponentBodyRangesFromProgram(program);
+  const tasks: InjectionTask[] = [];
+  let customHookIndex = 0;
+
+  traverseProgram(program, {
+    enter: (path) => {
+      const node: any = path.node;
+      if (!node || !isInsideComponentBody(componentBodies, getNodeStart(node))) {
+        return;
+      }
+
+      // Handle variable declarations: const x = useSignal()
+      if (node.type === 'VariableDeclarator') {
+        const task = processVariableDeclarator(code, node, path);
+        if (task) {
+          tasks.push(task);
+        }
+      }
+
+      // Handle expression statements: useTask$(() => {})
+      if (node.type === 'ExpressionStatement') {
+        const result = processExpressionStatement(code, node, customHookIndex);
+        if (result) {
+          tasks.push(result.task);
+          customHookIndex = result.newIndex;
+        }
+      }
+    },
+  });
+
+  return applySourceEdits(code, tasks);
+}
+
+// ============================================================================
+// Variable Declarator Processing
+// ============================================================================
+
+/** Processes: const x = useSignal(), const data = useCustomHook() */
+function processVariableDeclarator(
+  code: string,
+  node: any,
+  path: { parent: any }
+): InjectionTask | null {
+  const hookInfo = extractHookInfo(node);
+  if (!hookInfo) {
+    return null;
+  }
+
+  const { hookName, normalizedName, variableId } = hookInfo;
+  if (hookName === INNER_USE_HOOK) {
+    return null;
+  }
+
+  const range = getParentRange(path.parent);
+  if (!range) {
+    return null;
+  }
+
+  const [, declEnd] = range;
+
+  // Custom hook
+  if (isCustomHook(normalizedName)) {
+    if (hasCollecthookAfterByVariableId(code, declEnd, variableId)) {
+      return null;
+    }
+    const payload = buildCollecthookPayload(
+      variableId,
+      'customhook',
+      'VariableDeclarator',
+      variableId
+    );
+    return insertAfterStatement(code, declEnd, payload);
+  }
+
+  // Known hook
+  if (!isKnownHook(normalizedName)) {
+    return null;
+  }
+  if (hasCollecthookAfterByVariableId(code, declEnd, variableId)) {
+    return null;
+  }
+
+  const payload = buildCollecthookPayload(
+    variableId,
+    normalizedName,
+    'VariableDeclarator',
+    variableId
+  );
+  return insertAfterStatement(code, declEnd, payload);
+}
+
+// ============================================================================
+// Expression Statement Processing
+// ============================================================================
+
+/** Processes: useTask$(() => {}), useCustomHook() */
+function processExpressionStatement(
+  code: string,
+  node: any,
+  currentIndex: number
+): { task: InjectionTask; newIndex: number } | null {
+  const hookInfo = extractExpressionHookInfo(node);
+  if (!hookInfo) {
+    return null;
+  }
+
+  const { hookName, normalizedName } = hookInfo;
+  if (hookName === INNER_USE_HOOK) {
+    return null;
+  }
+
+  const stmtRange = node.range as number[] | undefined;
+  if (!stmtRange) {
+    return null;
+  }
+
+  const [stmtStart, stmtEnd] = stmtRange;
+
+  // Known hook (expression form)
+  if (isKnownHook(normalizedName)) {
+    if (hasCollecthookAfterByVariableName(code, stmtEnd, normalizedName)) {
+      return null;
+    }
+    const payload = buildCollecthookPayload(
+      normalizedName,
+      normalizedName,
+      'expressionStatement',
+      'undefined'
+    );
+    return {
+      task: insertAfterStatement(code, stmtEnd, payload),
+      newIndex: currentIndex,
+    };
+  }
+
+  // Custom hook (expression form) - convert to variable declaration
+  if (isCustomHook(normalizedName)) {
+    return convertToVariableDeclaration(code, stmtStart, stmtEnd, currentIndex);
+  }
+
+  return null;
+}
+
+/** Converts a custom hook expression to a variable declaration with tracking */
+function convertToVariableDeclaration(
+  code: string,
+  stmtStart: number,
+  stmtEnd: number,
+  currentIndex: number
+): { task: InjectionTask; newIndex: number } {
+  const callSource = code.slice(stmtStart, stmtEnd);
+  const variableName = `_customhook_${currentIndex}`;
+  const payload = buildCollecthookPayload(
+    variableName,
+    'customhook',
+    'VariableDeclarator',
+    variableName
+  );
+
+  return {
+    task: {
+      kind: 'replace',
+      start: stmtStart,
+      end: stmtEnd,
+      text: `let ${variableName} = ${trimStatementSemicolon(callSource)}; ${payload}`,
+    },
+    newIndex: currentIndex + 1,
+  };
+}
+
+// ============================================================================
+// Hook Info Extraction
+// ============================================================================
+
+interface HookInfo {
+  hookName: string;
+  normalizedName: string;
+  variableId: string;
+}
+
+function extractHookInfo(node: any): HookInfo | null {
+  const variableId = getVariableIdentifierName(node.id);
+  if (!variableId) {
+    return null;
+  }
+
+  const hookCall = extractHookCall(node.init);
+  if (!hookCall) {
+    return null;
+  }
+
+  return { ...hookCall, variableId };
+}
+
+function extractExpressionHookInfo(node: any): { hookName: string; normalizedName: string } | null {
+  return extractHookCall(node.expression);
+}
+
+function extractHookCall(node: unknown): { hookName: string; normalizedName: string } | null {
+  if (!isAstNodeLike(node) || node.type !== 'CallExpression') {
+    return null;
+  }
+
+  const callee = (node as any).callee;
+  if (!isAstNodeLike(callee) || callee.type !== 'Identifier') {
+    return null;
+  }
+
+  const hookName = normalizeHookName((callee as any).name as string);
+  return {
+    hookName,
+    normalizedName: normalizeQrlHookName(hookName),
+  };
+}
+
+// ============================================================================
+// Position Helpers
+// ============================================================================
+
+/** Inserts on the statement's own line, adding the `;` it may lack because of ASI */
+function insertAfterStatement(code: string, statementEnd: number, statement: string): InsertTask {
+  const separator = code[statementEnd - 1] === ';' ? ' ' : '; ';
+  return { kind: 'insert', pos: statementEnd, text: separator + statement };
+}
+
+function getParentRange(parent: any): [number, number] | null {
+  const range = parent?.range as number[] | undefined;
+  if (!range) {
+    return null;
+  }
+  return [range[0], range[1]];
+}

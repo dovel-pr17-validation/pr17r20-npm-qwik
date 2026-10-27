@@ -1,0 +1,337 @@
+@reference "../../global.css";
+
+.tutorial {
+  @apply bg-background-base flex flex-col w-full h-dvh overflow-hidden;
+}
+
+.tutorial main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    'content-panel repl-panel'
+    'content-panel content-footer';
+  gap: 24px;
+  align-items: stretch;
+  height: calc(100% - var(--header-height, 0px));
+  box-sizing: border-box;
+  margin-top: var(--header-height, 0px);
+  transition: transform 500ms;
+  @apply ml-12 mr-6;
+}
+
+.tutorial-content-panel {
+  grid-area: content-panel;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-main {
+  @apply min-h-0 flex-1 overflow-y-auto overflow-x-hidden;
+}
+
+.content-footer {
+  grid-area: content-footer;
+}
+
+.tutorial-content-shell {
+  width: min(100%, 680px);
+  padding-bottom: 32px;
+}
+
+.tutorial-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  min-width: 0;
+  padding-bottom: 16px;
+  background: linear-gradient(
+    180deg,
+    var(--color-background-base) 0,
+    var(--color-background-base) calc(100% - 10px),
+    transparent 100%
+  );
+}
+
+.edit-tutorial {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  justify-self: end;
+  font-family: 'Ubuntu Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-decoration: none;
+
+  @apply text-secondary-foreground-base;
+}
+
+.edit-tutorial span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-tutorial:hover {
+  color: var(--tutorial-accent);
+}
+
+.tutorial-copy h1 {
+  margin: 0 0 24px;
+  color: var(--tutorial-text);
+  font-family: 'Tomorrow', sans-serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 40px;
+}
+
+.tutorial-copy-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tutorial-copy-body > :first-child {
+  margin-top: 0;
+}
+
+.tutorial-copy-body > :last-child {
+  margin-bottom: 0;
+}
+
+.tutorial-copy-body h2,
+.tutorial-copy-body h3,
+.tutorial-copy-body h4,
+.tutorial-copy-body h5,
+.tutorial-copy-body h6 {
+  margin: 8px 0 0;
+  color: var(--tutorial-text);
+  font-family: 'Tomorrow', sans-serif;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 28px;
+  scroll-margin-top: calc(var(--header-height, 0px) + 32px);
+}
+
+.tutorial-copy-body p,
+.tutorial-copy-body li,
+.tutorial-copy-body th,
+.tutorial-copy-body td {
+  color: var(--tutorial-text);
+  font-family: 'Ubuntu Sans', sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.tutorial-copy-body p,
+.tutorial-copy-body ul,
+.tutorial-copy-body ol,
+.tutorial-copy-body table,
+.tutorial-copy-body pre {
+  margin: 0;
+}
+
+.tutorial-copy-body ul,
+.tutorial-copy-body ol {
+  padding-left: 24px;
+}
+
+.tutorial-copy-body li + li {
+  margin-top: 8px;
+}
+
+.tutorial-copy-body li::marker {
+  color: var(--tutorial-outline-text);
+}
+
+.tutorial-copy-body a {
+  color: var(--color-secondary-foreground-base);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  @apply bg-secondary-background-base;
+  padding: 2px 0px;
+}
+
+.tutorial-copy-body a:hover {
+  text-decoration: none;
+}
+
+.tutorial-copy-body table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tutorial-copy-body th,
+.tutorial-copy-body td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-border-base);
+}
+
+.tutorial-copy-body pre {
+  box-shadow: 6px 6px 0 0 var(--color-shadow-base);
+  @apply border-[1.6px] border-border-base rounded-2xl overflow-hidden p-2;
+  overflow-x: auto;
+}
+
+.tutorial-copy-body pre code {
+  display: block;
+  max-width: 50px;
+  background-color: transparent;
+  line-height: 1.5;
+  border: none;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+.tutorial-copy-body code {
+  @apply bg-secondary-background-base;
+  padding: 2px 4px;
+  @apply text-base font-body;
+}
+
+.footer-slot {
+  display: flex;
+  min-width: 0;
+}
+
+.footer-slot-start {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.footer-slot-end {
+  grid-column: 3;
+  min-width: 0;
+  justify-self: end;
+  justify-content: flex-end;
+}
+
+.footer-actions {
+  display: flex;
+  grid-column: 2;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.tutorial-repl-panel {
+  grid-area: repl-panel;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tutorial-repl-shell {
+  position: relative;
+  top: auto;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 6px 6px 0 0 var(--color-shadow-base);
+  @apply h-full border-[1.6px] border-border-base bg-background-base;
+}
+
+.tutorial .repl {
+  display: grid;
+  grid-template-rows: 1fr minmax(250px, 0.5fr);
+  grid-template-areas:
+    'repl-input-panel'
+    'repl-output-panel';
+  min-height: 0;
+  height: 100%;
+  background: var(--tutorial-card-bg);
+}
+
+.tutorial .repl .repl-detail-panel,
+.tutorial .repl-commands,
+.tutorial .repl-input-panel .repl-tab-button-close {
+  display: none;
+}
+
+.tutorial .repl-output-panel .repl-tab-buttons,
+.tutorial .repl-detail-panel .repl-tab-buttons {
+  @apply border-t-[1.6px] border-border-base;
+}
+
+@media (width < 90rem) {
+  .tutorial {
+    @apply mt-0;
+  }
+
+  .tutorial main {
+    width: 300vw;
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+    grid-template-columns: 100vw 100vw 100vw;
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'content-panel repl-panel repl-panel'
+      'content-footer content-footer content-footer';
+    @apply flex-1 gap-0 translate-0 m-0;
+  }
+
+  .tutorial main.tutorial-panel-input {
+    transform: translate3d(-100vw, 0, 0);
+  }
+
+  .tutorial main.tutorial-panel-output {
+    transform: translate3d(-200vw, 0, 0);
+  }
+
+  .content-main {
+    @apply py-6 px-4;
+  }
+
+  .tutorial-content-shell {
+    width: 100%;
+    padding-bottom: 24px;
+  }
+
+  .tutorial-toolbar {
+    position: static;
+    padding-bottom: 0;
+    background: none;
+    margin-bottom: 20px;
+  }
+
+  .tutorial-repl-panel {
+    display: contents;
+  }
+
+  .tutorial-repl-shell {
+    width: 200vw;
+    overflow: visible;
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .tutorial .repl-output-panel {
+    margin-top: 0;
+  }
+
+  .tutorial .repl-output-panel .repl-tab-buttons {
+    border-top: 0;
+  }
+}

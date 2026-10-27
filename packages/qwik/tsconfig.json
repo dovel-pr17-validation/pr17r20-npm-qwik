@@ -1,0 +1,29 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@qwik.dev/core": ["packages/qwik/src/core"],
+      "@qwik.dev/core/internal": ["packages/qwik/src/core"],
+      "@qwik.dev/core/jsx-runtime": ["packages/qwik/src/jsx-runtime"],
+      "@qwik.dev/core/jsx-dev-runtime": ["packages/qwik/src/jsx-runtime"],
+      "@qwik.dev/core/build": ["packages/qwik/src/build"],
+      "@qwik.dev/optimizer": ["packages/optimizer/src"],
+      "@qwik.dev/ts-optimizer": ["packages/ts-optimizer/src"],
+      "@qwik.dev/core/optimizer": ["packages/qwik-vite/src"],
+      "@qwik.dev/core/preloader": ["packages/qwik/src/preloader"],
+      "@qwik.dev/core/server": ["packages/qwik/src/server"],
+      "@qwik.dev/core/testing": ["packages/qwik/src/testing"],
+      "@qwik.dev/core/worker": ["packages/qwik/src/web-worker"],
+      "@qwik.dev/core/devtools": ["packages/qwik/src/devtools"],
+      "@qwik.dev/core/insights": ["packages/qwik/src/insights"],
+      "@qwik.dev/core/insights/vite": ["packages/qwik/src/insights/vite"]
+    }
+  },
+  "include": [
+    "src",
+    "global.d.ts",
+    "../qwik-vite/global.d.ts",
+    "../ts-optimizer/src/hashing/siphash13.d.ts"
+  ],
+  "exclude": ["dist"]
+}

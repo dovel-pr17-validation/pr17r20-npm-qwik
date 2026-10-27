@@ -1,0 +1,231 @@
+# eslint-plugin-qwik
+
+## 2.0.0-rc.4
+
+### Patch Changes
+
+- 🐞🩹 `qwik/no-async-prevent-default` now also reports `stopPropagation()` / `stopImmediatePropagation()`, inline `on*$={(e) => ...}` handlers and handlers inside a ternary or a handler array. A native listener created inside a `$` handler is no longer reported. (by [@intellix](https://github.com/intellix) in [#9181](https://github.com/QwikDev/qwik/pull/9181))
+
+## 2.0.0-rc.3
+
+## 2.0.0-rc.2
+
+## 2.0.0-rc.1
+
+## 2.0.0-rc.0
+
+## 2.0.0-beta.47
+
+## 2.0.0-beta.46
+
+## 2.0.0-beta.45
+
+## 2.0.0-beta.44
+
+## 2.0.0-beta.43
+
+## 2.0.0-beta.42
+
+## 2.0.0-beta.41
+
+### Patch Changes
+
+- refactor: remove useAsync$ and createAsync$. Use useComputed$ or createComputed$ instead. (by [@Varixo](https://github.com/Varixo) in [#8941](https://github.com/QwikDev/qwik/pull/8941))
+
+## 2.0.0-beta.40
+
+## 2.0.0-beta.39
+
+## 2.0.0-beta.38
+
+## 2.0.0-beta.37
+
+## 2.0.0-beta.36
+
+### Patch Changes
+
+- 🛠 refactor(eslint): modernize plugin deps and rule typing (by [@JerryWu1234](https://github.com/JerryWu1234) in [#8621](https://github.com/QwikDev/qwik/pull/8621))
+
+## 2.0.0-beta.35
+
+## 2.0.0-beta.34
+
+### Patch Changes
+
+- Allow `Temporal`-types in `valid-lexical-scope`-lint (as they can be serialized) (by [@FloezeTv](https://github.com/FloezeTv) in [#8578](https://github.com/QwikDev/qwik/pull/8578))
+
+## 2.0.0-beta.33
+
+### Patch Changes
+
+- Add `no-await-navigate-in-use-task` ESLint rule to catch awaiting `useNavigate()` inside blocking `useTask$` callbacks. (by [@VedantMadane](https://github.com/VedantMadane) in [#8549](https://github.com/QwikDev/qwik/pull/8549))
+
+- fix(valid-lexical-scope): recognize `Readonly<Signal<T>>` and other Signal-derived types (by [@maiieul](https://github.com/maiieul) in [#8582](https://github.com/QwikDev/qwik/pull/8582))
+
+## 2.0.0-beta.32
+
+## 2.0.0-beta.31
+
+## 2.0.0-beta.30
+
+## 2.0.0-beta.29
+
+## 2.0.0-beta.28
+
+## 2.0.0-beta.27
+
+## 2.0.0-beta.26
+
+## 2.0.0-beta.25
+
+## 2.0.0-beta.24
+
+## 2.0.0-beta.23
+
+### Patch Changes
+
+- 🐞🩹 eslint-plugin: detect node API usage more accurately (by [@JerryWu1234](https://github.com/JerryWu1234) in [#7664](https://github.com/QwikDev/qwik/pull/7664))
+
+## 2.0.0-beta.22
+
+## 2.0.0-beta.21
+
+## 2.0.0-beta.20
+
+## 2.0.0-beta.19
+
+## 2.0.0-beta.18
+
+## 2.0.0-beta.17
+
+## 2.0.0-beta.16
+
+## 2.0.0-beta.15
+
+## 2.0.0-beta.14
+
+## 2.0.0-beta.13
+
+### Minor Changes
+
+- ✨ add eslint rule for resolving async computed (by [@Varixo](https://github.com/Varixo) in [#7881](https://github.com/QwikDev/qwik/pull/7881))
+
+## 2.0.0-beta.12
+
+## 2.0.0-beta.11
+
+## 2.0.0-beta.10
+
+## 2.0.0-beta.9
+
+## 2.0.0-beta.8
+
+## 2.0.0-beta.7
+
+## 2.0.0-beta.6
+
+## 2.0.0-beta.5
+
+## 2.0.0-beta.4
+
+## 2.0.0-beta.3
+
+## 2.0.0-beta.2
+
+## 2.0.0-beta.1
+
+## 2.0.0-alpha.10
+
+## 2.0.0-alpha.9
+
+## 2.0.0-alpha.8
+
+## 2.0.0-alpha.7
+
+## 2.0.0-alpha.6
+
+## 2.0.0-alpha.5
+
+## 2.0.0-alpha.4
+
+## 2.0.0-alpha.3
+
+## 2.0.0-alpha.2
+
+## 2.0.0-alpha.1
+
+## 2.0.0-alpha.0
+
+## 1.19.0
+
+## 1.18.0
+
+### Patch Changes
+
+- execute cleanup cb for all component tree while calling dispose.cleanup method returned by render fn (by [@sashkashishka](https://github.com/sashkashishka) in [#8164](https://github.com/QwikDev/qwik/pull/8164))
+
+## 1.17.2
+
+## 1.17.1
+
+## 1.17.0
+
+## 1.16.1
+
+## 1.16.0
+
+### Minor Changes
+
+- ✨ bump Vite to v7 (by [@gioboa](https://github.com/gioboa) in [#7762](https://github.com/QwikDev/qwik/pull/7762))
+
+## 1.15.0
+
+### Patch Changes
+
+- 🛠 update devDependencies and configurations (by [@JerryWu1234](https://github.com/JerryWu1234) in [#7695](https://github.com/QwikDev/qwik/pull/7695))
+
+## 1.14.1
+
+## 1.14.0
+
+### Minor Changes
+
+- ✨ our eslint plugin now supports eslint 9 (by [@better-salmon](https://github.com/better-salmon) in [#7418](https://github.com/QwikDev/qwik/pull/7418))
+
+### Patch Changes
+
+- ✨ Improve types and README documentation with clear configuration examples for ESLint 9+ (flat config). Added `globalIgnores` for more clarity and `tseslint.config` for better type inference inside the `parserOptions` option. (by [@better-salmon](https://github.com/better-salmon) in [#7418](https://github.com/QwikDev/qwik/pull/7418))
+
+## 1.13.0
+
+### Minor Changes
+
+- let eslint-plugin-qwik support Eslint 9 and 8 simultaneously (by [@JerryWu1234](https://github.com/JerryWu1234) in [#7072](https://github.com/QwikDev/qwik/pull/7072))
+
+### Patch Changes
+
+- Fix ESLint 9 compatibility, enhance typing and README. (by [@better-salmon](https://github.com/better-salmon) in [#7415](https://github.com/QwikDev/qwik/pull/7415))
+
+- 🐞🩹 Enhance lexical scope and skip variables declared by Qwik's internal hooks. (by [@JerryWu1234](https://github.com/JerryWu1234) in [#7366](https://github.com/QwikDev/qwik/pull/7366))
+
+## 1.12.1
+
+## 1.12.0
+
+## 1.11.0
+
+## 1.10.0
+
+### Patch Changes
+
+- 🐞🩹 the @typescript-eslint/utils dependency is upgraded and made explicit in the package (by [@wmertens](https://github.com/wmertens) in [#7030](https://github.com/QwikDev/qwik/pull/7030))
+
+## 1.9.1
+
+## 1.9.0
+
+## 1.8.0
+
+## 1.7.3
+
+## 1.7.2

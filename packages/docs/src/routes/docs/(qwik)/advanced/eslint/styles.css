@@ -1,0 +1,116 @@
+@reference "tailwindcss";
+
+.docs .panel {
+  @apply rounded-md;
+  @apply mt-4;
+  background: var(--color-background-accent);
+  @apply border;
+  border-color: var(--color-border-base);
+  text-decoration: none;
+}
+
+.docs .ruleset-legend {
+  @apply grid;
+  @apply grid-cols-1;
+  @apply text-sm;
+}
+.docs .ruleset-legend > div {
+  @apply list-none;
+  @apply my-3;
+  @apply px-6;
+}
+@media screen and (min-width: 768px) {
+  .docs .ruleset-legend {
+    @apply grid-cols-4;
+  }
+  .docs .ruleset-legend > div {
+    @apply list-none;
+    @apply my-6;
+    @apply px-6;
+  }
+  .docs .ruleset-legend > div.panel-border {
+    @apply border-r;
+    border-color: var(--color-border-base);
+  }
+}
+
+.icon {
+  @apply mb-2;
+  @apply block;
+}
+.icon.icon-inactive {
+  opacity: 0.5;
+}
+
+.docs .panel p {
+  margin: 0 !important;
+}
+
+.docs .rule-wrapper {
+  @apply mb-14;
+  @apply pb-14;
+  @apply border-b;
+  border-color: var(--color-border-base);
+}
+.docs .rule-wrapper:last-child {
+  @apply border-b-0;
+}
+
+.docs .rule-description {
+  @apply text-xs;
+  @apply block;
+  @apply mt-2;
+  @apply max-w-[90%];
+  @apply leading-5;
+}
+
+.docs .code-wrapper {
+  @apply relative;
+}
+
+.docs .badge {
+  @apply absolute;
+  @apply flex;
+  @apply rounded-full;
+  @apply text-lg;
+  color: var(--color-primary-foreground-base);
+  @apply top-0;
+  @apply right-0;
+  @apply items-center;
+  @apply justify-center;
+  transform: translate(50%, -50%);
+  height: 40px;
+  width: 40px;
+}
+
+.docs .badge.good {
+  @apply text-green-500;
+  @apply bg-green-200;
+}
+.docs .badge.bad {
+  @apply text-red-500;
+  @apply bg-red-200;
+}
+.docs .code-description {
+  @apply text-sm;
+  @apply px-4;
+  @apply mt-2;
+  @apply mb-10;
+}
+
+.docs .edit-examples-wrapper {
+  text-align: right;
+}
+
+.docs .edit-examples-wrapper .edit-btn {
+  background: var(--color-background-accent);
+  @apply border;
+  border-color: var(--color-border-base);
+  color: var(--color-foreground-base);
+  @apply no-underline;
+  @apply px-2;
+  @apply py-1;
+  @apply rounded-md;
+  @apply inline-block;
+  @apply text-sm;
+}

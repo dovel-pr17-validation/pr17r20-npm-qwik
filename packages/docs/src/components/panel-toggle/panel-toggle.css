@@ -1,0 +1,17 @@
+@reference "../../global.css";
+
+.panel-toggle {
+  @apply grid h-[36px] min-h-[36px] border-b-[1.6px] border-base 2xl:hidden bg-background-base;
+}
+
+.underlined-tab {
+  @apply text-body-xs text-foreground-soft;
+}
+
+.underlined-tab:hover {
+  @apply text-standalone-accent;
+}
+
+.underlined-tab.active {
+  @apply text-label-sm border-b-2 border-standalone-accent;
+}

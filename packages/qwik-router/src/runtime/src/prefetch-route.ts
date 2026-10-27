@@ -1,0 +1,93 @@
+import { isBrowser, isDev } from '@qwik.dev/core';
+import { _requestPreload as preload } from '@qwik.dev/core/internal';
+import { ensureSlash } from '../../utils/pathname';
+import { fetchRouteLoaderData, getModuleRouteLoaders } from './route-loaders';
+import { getBasePathname, getRouterConfig } from './router-config';
+import { loadRoute } from './routing';
+import type { LoadedRoute, RouteModule } from './types';
+
+/**
+ * Prefetch a route's JS bundles and optionally its loader data.
+ *
+ * Resolves the route from the trie to get the routeName (for the bundle graph preloader) and
+ * `$loaders$` (for data prefetching). The bundle graph is keyed by route name (e.g.
+ * `products/[id]/`), not by actual pathname (e.g. `products/123/`).
+ *
+ * @param url - The URL pathname to prefetch
+ * @param prefetchData - Whether to prefetch loader data
+ * @param probability - Bundle preload probability (0-1, default 0.8)
+ * @param manifestHash - Build manifest hash for loader URLs (from `useDocumentHead().manifestHash`)
+ * @param prefetchBundle - Whether to prefetch route JS bundles
+ */
+export async function prefetchRoute(
+  url: URL,
+  prefetchData?: boolean,
+  probability = 0.8,
+  manifestHash?: string,
+  prefetchBundle = true
+) {
+  if (!isBrowser || isDev) {
+    return;
+  }
+
+  try {
+    const { routes, cacheModules } = await getRouterConfig();
+    const loadedRoute = await loadRoute(routes, cacheModules, url.pathname);
+    if (!loadedRoute) {
+      return;
+    }
+
+    if (prefetchBundle) {
+      // Preload JS bundles using the route NAME (not pathname) — the bundle graph
+      // is keyed by route name (e.g. "products/[id]/") not actual path
+      let routeName = loadedRoute.$routeName$;
+      routeName = ensureSlash(routeName);
+      if (routeName.length > 1 && routeName.startsWith('/')) {
+        routeName = routeName.slice(1);
+      }
+      preload(routeName, probability);
+    }
+
+    if (!prefetchData || !manifestHash) {
+      return;
+    }
+
+    prefetchLoaderData(loadedRoute, url, manifestHash);
+  } catch {
+    // Silently ignore prefetch errors
+  }
+}
+
+/**
+ * Prefetch a route's loader data in parallel (fire-and-forget). The per-nav fetch map dedupes
+ * repeat hovers and shares the promise with the navigation's own fetch; the browser HTTP cache
+ * handles freshness. Immutable loaders are skipped: they download lazily on first actual read and
+ * are then browser-cached for the life of the deploy.
+ */
+export const prefetchLoaderData = (loadedRoute: LoadedRoute, url: URL, manifestHash: string) => {
+  if (!loadedRoute.$loaders$?.length || !loadedRoute.$loaderPaths$) {
+    return;
+  }
+  const immutableIds = new Set(
+    getModuleRouteLoaders(loadedRoute.$mods$ as RouteModule[])
+      .filter((loader) => loader.__cacheControl === 'immutable')
+      .map((loader) => loader.__id)
+  );
+  const basePath = getBasePathname();
+  for (const hash of loadedRoute.$loaders$) {
+    if (immutableIds.has(hash)) {
+      continue;
+    }
+    let loaderPath = loadedRoute.$loaderPaths$[hash];
+    if (!loaderPath) {
+      continue;
+    }
+    if (basePath !== '/' && !loaderPath.startsWith(basePath)) {
+      loaderPath = basePath + loaderPath.slice(1);
+    }
+    fetchRouteLoaderData(hash, loaderPath, manifestHash, {
+      pageUrl: url,
+      basePath,
+    }).catch(() => {});
+  }
+};

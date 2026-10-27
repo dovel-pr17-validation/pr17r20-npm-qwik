@@ -1,0 +1,577 @@
+---
+title: Upgrade to v2 | Qwik
+description: Complete guide for migrating a Qwik application from v1 (@builder.io) to v2 (@qwik.dev).
+contributors:
+  - thejackshelton
+  - c0deZ3R0
+updated_at: '2026-07-31T00:00:00Z'
+created_at: '2026-03-19T00:00:00Z'
+---
+
+import PackageManagerTabs from '~/components/package-manager-tabs/index.tsx';
+import { Note, LongNote } from '~/components/note/note';
+import { Checklist, ChecklistItem } from '~/components/checklist/checklist';
+
+# Migrating to Qwik v2
+
+Qwik v2 is a ground-up rewrite of the framework. This guide covers what's new, how to run the automated migration, and what to verify afterward.
+
+## What's New in v2
+
+- **Vite environment API** — Better monorepo and adapter support
+- **Vite 8 / Rolldown** — Out of the box compatibility
+- **Smaller serialized state** — Up to 30% smaller HTML
+- **HMR** — Instant browser updates without losing state
+- **Async `useComputed$`** — Replaces `useResource$` with auto-tracking, polling, concurrency control, and abort
+- **`<Pending>`** — Shows fallback UI while part of the page waits
+
+## Quick Start
+
+1. [Run the CLI](#run-the-migration-cli)
+2. [Handle third-party libraries](#third-party-libraries)
+3. [Check behavioral changes](#behavioral-changes)
+4. [Migrate deprecated APIs](#deprecated-apis)
+5. [Update your tests](#tests)
+6. [Run the checklist](#verification-checklist)
+
+---
+
+## Run the Migration CLI
+
+<PackageManagerTabs>
+<span q:slot="pnpm">
+```shell
+pnpm qwik migrate-v2
+```
+</span>
+<span q:slot="npm">
+```shell
+npx qwik migrate-v2
+```
+</span>
+<span q:slot="yarn">
+```shell
+yarn qwik migrate-v2
+```
+</span>
+<span q:slot="bun">
+```shell
+bunx qwik migrate-v2
+```
+</span>
+</PackageManagerTabs>
+
+The CLI handles package renames, identifier changes, config updates, and dependency migration automatically.
+
+<LongNote title="What the CLI renames">
+
+**Packages**
+
+| v1 | v2 |
+|---|---|
+| `@builder.io/qwik` | `@qwik.dev/core` |
+| `@builder.io/qwik-city` | `@qwik.dev/router` |
+| `@builder.io/qwik-react` | `@qwik.dev/react` |
+| `@qwik-city-plan` | `getRouterConfig()` from `@qwik.dev/router` (`@qwik-router-config` still works) |
+| `@builder.io/qwik/jsx-runtime` | `@qwik.dev/core/jsx-runtime` |
+
+**Identifiers**
+
+| v1 | v2 |
+|---|---|
+| `QwikCityProvider` | `QwikRouterProvider` |
+| `qwikCity` | `qwikRouter` |
+| `QwikCityPlugin` | `QwikRouterPlugin` |
+| `createQwikCity` | `createQwikRouter` |
+| `qwikCityPlan` | `qwikRouterConfig` |
+| `jsxs` | `jsx` |
+
+</LongNote>
+
+---
+
+## Third-Party Libraries
+
+If you use third-party libraries that depend on `@builder.io/qwik`, you may need to configure overrides and SSR bundling.
+
+### Package manager overrides
+
+Redirect the old package name so your package manager doesn't install v1 alongside v2:
+
+<PackageManagerTabs>
+<span q:slot="pnpm">
+```json
+{
+  "pnpm": {
+    "overrides": {
+      "@builder.io/qwik": "npm:@qwik.dev/core@^2",
+      "@builder.io/qwik-city": "npm:@qwik.dev/router@^2"
+    }
+  }
+}
+```
+</span>
+<span q:slot="npm">
+```json
+{
+  "overrides": {
+    "@builder.io/qwik": "npm:@qwik.dev/core@^2",
+    "@builder.io/qwik-city": "npm:@qwik.dev/router@^2"
+  }
+}
+```
+</span>
+<span q:slot="yarn">
+```json
+{
+  "resolutions": {
+    "@builder.io/qwik": "npm:@qwik.dev/core@^2",
+    "@builder.io/qwik-city": "npm:@qwik.dev/router@^2"
+  }
+}
+```
+</span>
+<span q:slot="bun">
+```json
+{
+  "overrides": {
+    "@builder.io/qwik": "npm:@qwik.dev/core@^2",
+    "@builder.io/qwik-city": "npm:@qwik.dev/router@^2"
+  }
+}
+```
+</span>
+</PackageManagerTabs>
+
+### ssr.noExternal
+
+Qwik libraries no longer need to be bundled into the server build. The Vite plugin finds them in your dependencies and excludes them from dependency optimization. A production server build treats them like any other dependency, so your config decides whether they are external, and an external library shares Qwik's runtime state with your app, Qwik Router included. The dev server and builds with a `NODE_ENV` other than `production` always bundle them, because those builds contain the development version of Qwik, while Node loads the production version for an external library.
+
+A production server loads an external library from `node_modules` at runtime, and the library imports `@qwik.dev/core` (and often `@qwik.dev/router`) there too. Keep those packages in `dependencies` rather than `devDependencies` when you deploy with `npm install --omit=dev`, and make the library resolve the same `@qwik.dev/core` version as your app; the server refuses to load two Qwik versions. Otherwise add the library to `resolve.noExternal` to bundle it. The production build warns about each of these.
+
+Libraries built for Qwik v1 import `@builder.io/qwik`, which only the bundler resolves, so they must stay bundled. Add them to `resolve.noExternal`, which reaches every server environment, including the one static site generation adapters build in, together with the [package manager overrides](#package-manager-overrides):
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  resolve: {
+    noExternal: ['some-v1-qwik-library'],
+  },
+});
+```
+
+---
+
+## Behavioral Changes
+
+These won't cause compile errors but will break runtime behavior if not addressed.
+
+### useComputed$ now supports async
+
+In v1 `useComputed$` rejected async functions. In v2 it accepts them: pass an `async` function (or return a Promise) and `.value` holds the resolved result. Qwik auto-tracks the signals and stores the function reads before the first `await`; reads after an `await` must use the `track()` provided on the context argument.
+
+```typescript
+// v2 — useComputed$ handles async directly
+const data = useComputed$(async ({ abortSignal }) => {
+  const result = await fetch('/api/data', { signal: abortSignal });
+  return result.json();
+});
+```
+
+<Note title="READING COMPUTEDSIGNAL.VALUE">
+`.value` throws while unresolved, and re-throws the error if the computation failed. Read it inside [`<Pending>`](/docs/labs/pending/index.mdx) and [`<Catch>`](/docs/labs/catch/index.mdx), or provide an `initial` value.
+</Note>
+
+```tsx
+const DataView = component$((props: { data: Signal<unknown> }) => {
+  return <p>{JSON.stringify(props.data.value)}</p>;
+});
+
+// In the component that owns `data`:
+return (
+  <Catch fallback$={$((error) => <p>Error: {error.message}</p>)}>
+    <Pending fallback$={() => <p>Loading...</p>}>
+      <DataView data={data} />
+    </Pending>
+  </Catch>
+);
+```
+
+### useVisibleTask$ eagerness removed
+
+The `eagerness` option (`'load'` / `'idle'`) was removed in v2. Delete it if present.
+
+### QwikCityProvider → useQwikRouter
+
+Replace the `<QwikCityProvider>` wrapper with the `useQwikRouter()` hook:
+
+```tsx
+// v1
+import { QwikCityProvider, RouterOutlet } from '@builder.io/qwik-city';
+
+export default component$(() => {
+  return (
+    <QwikCityProvider>
+      <head>
+        <meta charset="utf-8" />
+      </head>
+      <body>
+        <RouterOutlet />
+      </body>
+    </QwikCityProvider>
+  );
+});
+```
+
+```tsx
+// v2
+import { RouterOutlet, useQwikRouter } from '@qwik.dev/router';
+
+export default component$(() => {
+  useQwikRouter();
+
+  return (
+    <>
+      <head>
+        <meta charset="utf-8" />
+      </head>
+      <body>
+        <RouterOutlet />
+      </body>
+    </>
+  );
+});
+```
+
+<Note>If your root component is reactive (reads signals), use `<QwikRouterProvider>` instead. `useQwikRouter()` only runs once during SSR.</Note>
+
+### Event attribute names changed
+
+The attributes Qwik writes into the HTML for listeners were renamed. This only matters if you inspect, query, or assert on them — JSX (`onClick$`, `document:onKeyDown$`) and `useOn*()` are unchanged.
+
+| Scope | v1 attribute | v2 attribute | v2 passive |
+|---|---|---|---|
+| Element | `on:click` | `q-e:click` | `q-ep:click` |
+| Document | `on-document:click` | `q-d:click` | `q-dp:click` |
+| Window | `on-window:click` | `q-w:click` | `q-wp:click` |
+
+Passive listeners (`{ passive: true }`) are new in v2 and get their own prefix, so a query for `q-e:scroll` will not match a passive scroll listener.
+
+The event name itself is still lowercased unless you opt into case sensitivity with a leading `-`, but v2 adds two rules: `--` is a literal `-` (`dbl--click` → `dbl-click`), and `DOMContentLoaded` is stored as `-d-o-m-content-loaded`.
+
+### Signal is a wider type
+
+In v1 `Signal<T>` was `{ value: T }`. In v2 it also has `untrackedValue` and `trigger()`:
+
+```typescript
+export interface Signal<T = any> {
+  value: T;
+  untrackedValue: T;
+  trigger(): void;
+}
+```
+
+Hand-rolled `{ value }` objects therefore no longer satisfy `Signal<T>`. This shows up most in tests and in helpers that fake a signal. Use the now-public `createSignal()` instead of a literal:
+
+```typescript
+// v1 — no longer type-checks in v2
+const fake: Signal<number> = { value: 0 };
+
+// v2
+import { createSignal } from '@qwik.dev/core';
+const fake = createSignal(0);
+```
+
+### client.devInput removed
+
+The `client.devInput` option of `qwikVite()` (v1 default `src/entry.dev.tsx`) is gone. Remove it from `vite.config.ts`. For SSR apps the dev server renders through `ssr.input`; for CSR apps (`csr: true`) it uses Vite's `index.html`.
+
+### Module-level variable mutated inside a closure no longer builds
+
+The v2 Optimizer extracts closures more aggressively than v1. If an extracted closure mutates an exported module-level `let`, the Optimizer rewrites the reference as an `import`, and assigning to an import binding fails at build time — a path v1's less aggressive extraction didn't reach.
+
+```tsx
+// Fails to build in v2
+export let count = 0;
+component$(() => {
+  return <button onClick$={() => count++}>{count}</button>;
+});
+```
+
+Move the mutation into an exported accessor function in a separate module:
+
+```tsx
+// counter.ts
+let count = 0;
+export const getCount = () => count;
+export const incrementCount = () => count++;
+```
+
+```tsx
+import { getCount, incrementCount } from './counter';
+
+component$(() => {
+  return <button onClick$={() => incrementCount()}>{getCount()}</button>;
+});
+```
+
+See [Module-level variables cannot be mutated after extraction](../../advanced/dollar/index.mdx#module-level-variables-cannot-be-mutated-after-extraction).
+
+### Serialization
+
+v1 serialized state into `<script type="qwik/json">` tags. v2 uses `<script type="qwik/vnode">` and `<script type="qwik/state">` at the end of the document. No code change needed, but tooling that parses the old tags will need updating.
+
+---
+
+## Deprecated APIs
+
+Still compile in v2, removed in v3.
+
+### useResource$ → async useComputed$
+
+| Aspect | v1 `useResource$` | v2 async `useComputed$` |
+|---|---|---|
+| Return type | `.value: Promise<T>` | `.value: T` |
+| Track deps | `ctx.track(() => sig.value)` | read `sig.value` directly before the first `await` (auto-tracked); use `ctx.track()` after an `await` |
+| Abort | Manual `AbortController` | `ctx.abortSignal` |
+| Previous value | - | `ctx.previous` |
+| Polling | - | `usePoll(signal, ms)` from `@qwik.dev/utils` |
+| Initial value | - | `options.initial` |
+| Rendering | `<Resource onResolved={} />` | read `.value` inside `<Pending>` / `<Catch>` |
+
+<LongNote title="Full before/after example">
+
+v1:
+
+```tsx
+import { useResource$, Resource } from '@builder.io/qwik';
+
+const Cmp = component$(() => {
+  const city = useSignal('');
+
+  const weather = useResource$(async ({ track, cleanup }) => {
+    const cityName = track(() => city.value);
+    const controller = new AbortController();
+    cleanup(() => controller.abort());
+    const res = await fetch(`/api/weather?city=${cityName}`, {
+      signal: controller.signal,
+    });
+    return res.json() as Promise<{ temp: number }>;
+  });
+
+  return (
+    <div>
+      <input name="city" bind:value={city} />
+      <Resource
+        value={weather}
+        onPending={() => <span>Loading...</span>}
+        onRejected={(e) => <span>Error: {e.message}</span>}
+        onResolved={(data) => <span>Temperature: {data.temp}</span>}
+      />
+    </div>
+  );
+});
+```
+
+v2:
+
+```tsx
+import { $, Catch, Pending, useComputed$, type Signal } from '@qwik.dev/core';
+
+const Temperature = component$((props: { weather: Signal<{ temp: number }> }) => {
+  return <div>Temperature: {props.weather.value.temp}</div>;
+});
+
+const Cmp = component$(() => {
+  const city = useSignal('');
+
+  const weather = useComputed$(async ({ abortSignal }) => {
+    const cityName = city.value;
+    const res = await fetch(`/api/weather?city=${cityName}`, {
+      signal: abortSignal,
+    });
+    return res.json() as Promise<{ temp: number }>;
+  });
+
+  return (
+    <div>
+      <input name="city" bind:value={city} />
+      <Catch fallback$={$((error) => <div>Error: {error.message}</div>)}>
+        <Pending fallback$={() => <div>Loading...</div>}>
+          <Temperature weather={weather} />
+        </Pending>
+      </Catch>
+    </div>
+  );
+});
+```
+
+</LongNote>
+
+`useComputed$()` owns the work that creates the value. [`<Pending>`](/docs/labs/pending/index.mdx) owns the fallback UI if you want to read `.value` directly while the value may still be pending.
+
+What changed:
+
+- `track(() => signal.value)` → read `signal.value` directly before the first `await` (auto-tracked); after an `await`, keep using the provided `track()`
+- Manual `AbortController` + `cleanup()` → `ctx.abortSignal`
+- `<Resource onPending onRejected onResolved />` → `<Pending>` and `<Catch>`
+- `.value` is `T` directly, not `Promise<T>`
+- `.error` is `Error | undefined`
+- For unlimited parallel fetches, pass `{ concurrency: 0 }`
+
+### `ReadonlySignal` → `Readonly<Signal<T>>`
+
+In v1 `ReadonlySignal<T>` was an alias for `Readonly<Signal<T>>`. In v2 it is a standalone interface exposing only `value`, so it is no longer interchangeable with a real signal. Replace it:
+
+```typescript
+// v1
+const label: ReadonlySignal<string> = useComputed$(() => name.value);
+
+// v2
+const label: Readonly<Signal<string>> = useComputed$(() => name.value);
+```
+
+### qwik-labs
+
+`@builder.io/qwik-labs` is removed in v2:
+
+| Feature | v2 Replacement |
+|---|---|
+| Insights | `@qwik.dev/core/insights` + `@qwik.dev/core/insights/vite` |
+| Typed Routes | Built into `@qwik.dev/router` via `qwikTypes()` |
+
+<LongNote title="Migrating Insights step-by-step">
+
+1. Remove the old package: `pnpm remove @builder.io/qwik-labs`
+
+2. Enable the experimental feature and add the plugin:
+
+```typescript
+// vite.config.ts
+import { qwikVite } from '@qwik.dev/core/optimizer';
+import { qwikInsights } from '@qwik.dev/core/insights/vite';
+
+export default defineConfig(() => ({
+  plugins: [
+    qwikVite({ experimental: ['insights'] }),
+    qwikInsights(),
+  ],
+}));
+```
+
+3. Update the import in `root.tsx`:
+
+```typescript
+// Before
+import { Insights } from '@builder.io/qwik-labs';
+// After
+import { Insights } from '@qwik.dev/core/insights';
+```
+
+</LongNote>
+
+---
+
+## Tests
+
+`@qwik.dev/core/testing` still exports `createDOM()` and `trigger()`, but v2 dispatches closer to what the browser does, which surfaces test code that relied on the old shortcuts.
+
+### event.target is not populated
+
+`trigger()` builds a real `Event` and invokes each handler as `handler(event, element)` rather than calling `element.dispatchEvent()`, so `event.target` stays `null`. Read the element from the second argument:
+
+```tsx
+// v1 — target was often good enough
+const onInput$ = $((event: Event) => {
+  value.value = (event.target as HTMLInputElement).value;
+});
+
+// v2 — use the element argument
+const onInput$ = $((event: Event, element: HTMLInputElement) => {
+  value.value = element.value;
+});
+```
+
+### Rendering over an existing container
+
+v2 refuses to re-render into an element that already has a `q:container`. Create a fresh DOM per test instead of reusing one across cases.
+
+### trigger() returns the event
+
+`trigger()` now returns the dispatched `Event` (or `null` if nothing matched), so you can assert on `defaultPrevented` or on payload fields you passed in. It also waits for the container to settle by default; pass `{ waitForIdle: false }` to opt out.
+
+### Faking signals
+
+Use `createSignal()` rather than a `{ value }` literal — see [Signal is a wider type](#signal-is-a-wider-type).
+
+---
+
+## Troubleshooting
+
+Find your error message below.
+
+### useComputed$ QRL ... cannot return a Promise
+
+No longer thrown in v2: `useComputed$` now supports async functions. See [useComputed$ now supports async](#usecomputed-now-supports-async).
+
+### Only primitive and object literals can be serialized
+
+A class instance or plain function in a store/signal/prop (error Q3). Wrap with `noSerialize()` or convert to a QRL with `$()`.
+
+### Qwik version X already imported while importing Y
+
+Two different Qwik versions loaded on the server (error Q30). Add [package manager overrides](#package-manager-overrides) so every library resolves to the same `@qwik.dev/core`.
+
+### IMPORTANT: This dependency was pre-bundled by Vite
+
+Add the library to `optimizeDeps.exclude`. See [ssr.noExternal](#ssrnoexternal).
+
+### [package] is being treated as an external dependency
+
+The dev server and development builds bundle every Qwik library, but this one is not listed in your `package.json`, for example because another library depends on it. Add it to your dependencies, or to both `resolve.noExternal` and `optimizeDeps.exclude`. See [ssr.noExternal](#ssrnoexternal).
+
+### Cannot find module '@builder.io/qwik'
+
+Usually a stale `jsxImportSource` in `tsconfig.json`. Run the CLI again or check your `tsconfig.json`.
+
+### Cannot find module '@builder.io/qwik-labs'
+
+Package removed in v2. See [qwik-labs](#qwik-labs).
+
+### ERR_REQUIRE_ESM / require() of ES Module
+
+Add `"type": "module"` to `package.json`. Run the CLI again if this wasn't set automatically.
+
+### Calling a 'use*()' method outside 'component$(...)'
+
+Move the hook inside `component$` (error Q10).
+
+### Property 'untrackedValue' is missing in type
+
+A `{ value }` object literal used where a `Signal` is expected. See [Signal is a wider type](#signal-is-a-wider-type).
+
+### Cannot read properties of null (reading 'value') in a test
+
+`event.target` is `null` under `trigger()`. See [event.target is not populated](#eventtarget-is-not-populated).
+
+### Cannot assign to import ... / Illegal reassignment of import ...
+
+A module-level `let` mutated inside a `$`-extracted closure. The exact wording depends on the bundler: esbuild says `Cannot assign to import "x"`, Rollup/Rolldown say `Illegal reassignment of import "x"`. See [Module-level variable mutated inside a closure no longer builds](#module-level-variable-mutated-inside-a-closure-no-longer-builds).
+
+### Move qwik packages [...] to devDependencies
+
+Older starters check this in `vite.config.ts`. Remove the check: a production server that loads Qwik libraries from `node_modules` needs `@qwik.dev/core` in `dependencies`. See [ssr.noExternal](#ssrnoexternal).
+
+---
+
+## Verification Checklist
+
+Every item should pass before your migration is done.
+
+<Checklist>
+  <ChecklistItem label='tsconfig.json has moduleResolution: Bundler and jsxImportSource: @qwik.dev/core' />
+  <ChecklistItem label='package.json has "type": "module"' />
+  <ChecklistItem label='@qwik.dev/* packages are in dependencies if a production server loads Qwik libraries from node_modules' />
+  <ChecklistItem label='Dev server starts without Code(Q30) in the console' />
+  <ChecklistItem label='npx tsc --noEmit passes' />
+</Checklist>

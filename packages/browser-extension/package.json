@@ -1,0 +1,30 @@
+{
+  "name": "@devtools/browser-extension",
+  "description": "Qwik DevTools browser extension for Chrome and Firefox",
+  "version": "0.1.1-beta.0",
+  "dependencies": {
+    "@qwik.dev/devtools": "workspace:^",
+    "lit": "^3.3.2",
+    "wxt": "^0.20.20"
+  },
+  "devDependencies": {
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3",
+    "@types/chrome": "0.1.38",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  },
+  "private": true,
+  "scripts": {
+    "build": "node scripts/gen-injected-scripts.mjs && wxt build",
+    "build:firefox": "node scripts/gen-injected-scripts.mjs && wxt build --browser firefox",
+    "dev": "node scripts/gen-injected-scripts.mjs && wxt",
+    "dev:firefox": "node scripts/gen-injected-scripts.mjs && wxt --browser firefox",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip --browser firefox"
+  },
+  "type": "module"
+}

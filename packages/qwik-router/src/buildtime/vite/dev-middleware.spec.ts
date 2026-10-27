@@ -1,0 +1,140 @@
+import { describe, it, expect, vi } from 'vitest';
+import type { ViteDevServer } from 'vite';
+import {
+  getDevMiddlewareRequestPath,
+  getRouterIndexTags,
+  sendRouterCssHotUpdate,
+} from './dev-middleware';
+
+const file = '/app/src/routes/docs/docs.css';
+
+describe('getDevMiddlewareRequestPath', () => {
+  it('keeps the base prefix from originalUrl', () => {
+    expect(
+      getDevMiddlewareRequestPath({
+        originalUrl: '/admin/blog/q-loader-abc.dev.json',
+        url: '/blog/q-loader-abc.dev.json',
+      } as any)
+    ).toBe('/admin/blog/q-loader-abc.dev.json');
+  });
+});
+
+/** Minimal ViteDevServer stand-in with controllable client/SSR graphs and a spy on the HMR channel. */
+function makeServer(opts: { client?: { url: string }[]; ssr?: { url: string }[] }) {
+  const send = vi.fn();
+  const graph = (mods?: { url: string }[]) => ({
+    getModulesByFile: () => (mods ? new Set(mods) : undefined),
+  });
+  const server = {
+    environments: {
+      client: { moduleGraph: graph(opts.client), hot: { send } },
+      ssr: { moduleGraph: graph(opts.ssr) },
+    },
+  } as unknown as ViteDevServer;
+  return { server, send };
+}
+
+describe('sendRouterCssHotUpdate', () => {
+  it('ignores non-CSS files', () => {
+    const { server, send } = makeServer({ ssr: [{ url: '/x.tsx' }] });
+    expect(sendRouterCssHotUpdate(server, '/app/src/routes/index.tsx', 1)).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('emits a deduped css-update for route CSS that only lives in the SSR graph', () => {
+    const { server, send } = makeServer({
+      ssr: [{ url: '/src/routes/docs/docs.css' }, { url: '/src/routes/docs/docs.css?inline' }],
+    });
+    expect(sendRouterCssHotUpdate(server, file, 123)).toBe(true);
+    expect(send).toHaveBeenCalledWith({
+      type: 'update',
+      updates: [
+        {
+          type: 'css-update',
+          path: '/src/routes/docs/docs.css',
+          acceptedPath: '/src/routes/docs/docs.css',
+          timestamp: 123,
+        },
+      ],
+    });
+  });
+
+  it('defers to Vite when the CSS is already in the client graph', () => {
+    const { server, send } = makeServer({
+      client: [{ url: '/src/routes/docs/docs.css' }],
+      ssr: [{ url: '/src/routes/docs/docs.css' }],
+    });
+    expect(sendRouterCssHotUpdate(server, file, 1)).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('getRouterIndexTags', () => {
+  it('prefixes CSS URLs with the Vite base and watches their files', () => {
+    const cssModule = {
+      url: '/@fs/app/src/routes/admin.css',
+      file: '/app/src/routes/admin.css',
+      importers: new Set(),
+    };
+    const moduleGraph = { idToModuleMap: new Map([[cssModule.url, cssModule]]) };
+    const watcherAdd = vi.fn();
+    const server = {
+      config: { base: '/admin/' },
+      environments: {
+        client: { moduleGraph: { idToModuleMap: new Map() } },
+        ssr: { moduleGraph },
+      },
+      watcher: { add: watcherAdd },
+    } as unknown as ViteDevServer;
+
+    expect(getRouterIndexTags(server)).toEqual([
+      {
+        tag: 'link',
+        attrs: { rel: 'stylesheet', href: '/admin/@fs/app/src/routes/admin.css' },
+      },
+    ]);
+    expect(watcherAdd).toHaveBeenCalledWith('/app/src/routes/admin.css');
+  });
+
+  it('links virtual CSS modules under /@id/ and does not watch them', () => {
+    // A plugin's virtual module has its id as url and file, and Vite serves it under `/@id/`
+    const route = { url: '/src/routes/index.tsx' };
+    const nullByteModule = {
+      url: '\0virtual:theme.css',
+      file: '\0virtual:theme.css',
+      importers: new Set([route]),
+    };
+    const bareModule = {
+      url: 'virtual:plain.css',
+      file: 'virtual:plain.css',
+      importers: new Set([route]),
+    };
+    const moduleGraph = {
+      idToModuleMap: new Map([
+        [nullByteModule.url, nullByteModule],
+        [bareModule.url, bareModule],
+      ]),
+    };
+    const watcherAdd = vi.fn();
+    const server = {
+      config: { base: '/admin/' },
+      environments: {
+        client: { moduleGraph: { idToModuleMap: new Map() } },
+        ssr: { moduleGraph },
+      },
+      watcher: { add: watcherAdd },
+    } as unknown as ViteDevServer;
+
+    expect(getRouterIndexTags(server)).toEqual([
+      {
+        tag: 'link',
+        attrs: { rel: 'stylesheet', href: '/admin/@id/__x00__virtual:theme.css' },
+      },
+      {
+        tag: 'link',
+        attrs: { rel: 'stylesheet', href: '/admin/@id/virtual:plain.css' },
+      },
+    ]);
+    expect(watcherAdd).not.toHaveBeenCalled();
+  });
+});

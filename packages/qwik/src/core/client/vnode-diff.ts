@@ -1,0 +1,2173 @@
+import { isDev } from '@qwik.dev/core/build';
+import { qInspector, qTest } from '../shared/utils/qdev';
+import { _EFFECT_BACK_REF } from '../reactive-primitives/backref';
+import { clearAllEffects, clearEffectSubscription } from '../reactive-primitives/cleanup';
+import { WrappedSignalImpl } from '../reactive-primitives/impl/wrapped-signal-impl';
+import type { Signal } from '../reactive-primitives/signal.public';
+import { SubscriptionData } from '../reactive-primitives/subscription-data';
+import { ComputedSignalFlags, EffectProperty, type Consumer } from '../reactive-primitives/types';
+import { isSignal } from '../reactive-primitives/utils';
+import { SERIALIZABLE_STATE, type OnRenderFn } from '../shared/component.public';
+import { isCursor, type Cursor } from '../shared/cursor/cursor';
+import { abandonCursor } from '../shared/cursor/cursor-queue';
+import { getCursorData, queueQwikLoaderEvent } from '../shared/cursor/cursor-props';
+import { assertDefined, assertFalse, assertTrue } from '../shared/error/assert';
+import { QError, qError } from '../shared/error/error';
+import { JSXNodeImpl, isJSXNode } from '../shared/jsx/jsx-node';
+import { Fragment, type Props } from '../shared/jsx/jsx-runtime';
+import {
+  directGetPropsProxyProp,
+  triggerPropsProxyEffect,
+  type PropsProxy,
+  type PropsProxyHandler,
+} from '../shared/jsx/props-proxy';
+import { Slot } from '../shared/jsx/slot.public';
+import type { JSXNodeInternal } from '../shared/jsx/types/jsx-node';
+import type { EventHandler, JSXChildren } from '../shared/jsx/types/jsx-qwik-attributes';
+import { SSRComment, SSRRaw, SkipRender } from '../shared/jsx/utils.public';
+import type { QRLInternal } from '../shared/qrl/qrl-class';
+import type { QElement } from '../shared/types';
+import { DEBUG_TYPE, QContainerValue, VirtualType } from '../shared/types';
+import { directSetAttribute } from '../shared/utils/attribute';
+import { escapeHTML } from '../shared/utils/character-escaping';
+import { _CONST_PROPS, _OWNER, _PROPS_HANDLER, _VAR_PROPS } from '../shared/utils/constants';
+import { isHtmlAttributeAnEventName } from '../shared/utils/event-names';
+import { getFileLocationFromJsx } from '../shared/utils/jsx-filename';
+import {
+  ELEMENT_PROPS,
+  ELEMENT_SEQ,
+  ITERATION_ITEM_MULTI,
+  ITERATION_ITEM_SINGLE,
+  OnRenderProp,
+  QBackRefs,
+  QComponentHash,
+  QContainerAttr,
+  QDefaultSlot,
+  QCursorBoundary,
+  QSlot,
+  QTemplate,
+  QwikLoaderScanEvent,
+  dangerouslySetInnerHTML,
+  debugStyleScopeIdPrefixAttr,
+  qwikInspectorAttr,
+} from '../shared/utils/markers';
+import { isPromise, retryOnPromise } from '../shared/utils/promises';
+import { isSlotProp, resolveSlotName } from '../shared/utils/prop';
+import { serializeAttribute, serializeClass, stringifyStyle } from '../shared/utils/styles';
+import { isArray, isObject, type ValueOrPromise } from '../shared/utils/types';
+import type { ElementVNode } from '../shared/vnode/element-vnode';
+import { ChoreBits } from '../shared/vnode/enums/chore-bits.enum';
+import type { TextVNode } from '../shared/vnode/text-vnode';
+import { createSetAttributeOperation } from '../shared/vnode/types/dom-vnode-operation';
+import type { VirtualVNode } from '../shared/vnode/virtual-vnode';
+import type { VNode } from '../shared/vnode/vnode';
+import { addVNodeOperation, markVNodeDirty } from '../shared/vnode/vnode-dirty';
+import { updateDirtySubtreeCursorBoundary, type CursorBoundary } from '../use/use-cursor-boundary';
+import { trackSignalAndAssignHost, untrack } from '../use/use-core';
+import { TaskFlags, isTask } from '../use/use-task';
+import { cleanupDestroyable } from '../use/utils/destroyable';
+import { runEventHandlerQRL } from '../client/run-qrl';
+import { VNodeFlags, type ClientContainer } from './types';
+import { mapApp_findIndx, mapArray_set } from './util-mapArray';
+import { getNewElementNamespaceData } from './vnode-namespace';
+import {
+  registerQwikLoaderEvent,
+  vnode_ensureElementInflated,
+  vnode_getDomParentVNode,
+  vnode_getElementName,
+  vnode_getFirstChild,
+  vnode_getProjectionParentComponent,
+  vnode_getProp,
+  vnode_getText,
+  vnode_getType,
+  vnode_inflateProjectionTrailingText,
+  vnode_insertBefore,
+  vnode_insertElementBefore,
+  vnode_insertVirtualBefore,
+  vnode_isElementVNode,
+  vnode_isProjection,
+  vnode_isTextVNode,
+  vnode_isVNode,
+  vnode_isVirtualVNode,
+  vnode_locate,
+  vnode_newElement,
+  vnode_newText,
+  vnode_newVirtual,
+  vnode_remove,
+  vnode_setAttr,
+  vnode_setProp,
+  vnode_setText,
+  vnode_truncate,
+  vnode_walkVNode,
+  type VNodeJournal,
+} from './vnode-utils';
+import { isObjectEmpty } from '../shared/utils/objects';
+import { EMPTY_OBJ } from '../shared/utils/flyweight';
+import { setInlineComponentData } from '../shared/cursor/chore-execution';
+import { ComputedSignalImpl } from '../reactive-primitives/impl/computed-signal-impl';
+
+export interface DiffContext {
+  $container$: ClientContainer;
+  $journal$: VNodeJournal;
+  $cursor$: Cursor;
+  $scopedStyleIdPrefix$: string | null;
+  /**
+   * Stack is used to keep track of the state of the traversal.
+   *
+   * We push current state into the stack before descending into the child, and we pop the state
+   * when we are done with the child.
+   */
+  $stack$: any[];
+  $asyncQueue$: Array<VNode | ValueOrPromise<JSXChildren> | Promise<JSXChildren>>;
+  $asyncAttributePromises$: Promise<void>[];
+  ////////////////////////////////
+  //// Traverse state variables
+  ////////////////////////////////
+  $vParent$: ElementVNode | VirtualVNode;
+  /// Current node we compare against. (Think of it as a cursor.)
+  /// (Node can be null, if we are at the end of the list.)
+  $vCurrent$: VNode | null;
+  /// When we insert new node we start it here so that we can descend into it.
+  /// NOTE: it can't be stored in `vCurrent` because `vNewNode` is in journal
+  /// and is not connected to the tree.
+  $vNewNode$: VNode | null;
+  $vEnd$: VNode | null;
+  $vEndParent$: ElementVNode | VirtualVNode | null;
+  $vSiblings$: Map<string, VNode> | null;
+  /// The array even indices will contains keys and odd indices the non keyed siblings.
+  $vSiblingsArray$: Array<string | VNode | null> | null;
+  /// Side buffer to track the new order of the siblings once they are scanned out of order.
+  /// Negative entries are not matched yet. The siblings are only moved after matching is done.
+  $vSideBuffer$: Map<VNode, number> | null;
+  /// First sibling not matched yet, where the cursor resumes after a match.
+  $vUnmatched$: VNode | null;
+  /// Current set of JSX children.
+  $jsxChildren$: JSXChildren[] | null;
+  // Current JSX child.
+  $jsxValue$: JSXChildren | null;
+  $jsxIdx$: number;
+  $jsxCount$: number;
+  // When we descend into children, we need to skip advance() because we just descended.
+  $shouldAdvance$: boolean;
+  $isCreationMode$: boolean;
+  $subscriptionData$: {
+    $const$: SubscriptionData;
+    $var$: SubscriptionData;
+  };
+}
+
+function peekNextSibling(vCurrent: VNode | null): VNode | null {
+  return vCurrent ? (vCurrent.nextSibling as VNode | null) : null;
+}
+
+function getLevelBoundary(diffContext: DiffContext): VNode | null {
+  return diffContext.$vParent$ === diffContext.$vEndParent$ ? diffContext.$vEnd$ : null;
+}
+
+function getCurrentInsertBefore(diffContext: DiffContext): VNode | null {
+  return diffContext.$vCurrent$ || getLevelBoundary(diffContext);
+}
+
+function peekNextSiblingWithinBoundary(
+  diffContext: DiffContext,
+  vCurrent: VNode | null
+): VNode | null {
+  let nextSibling = peekNextSibling(vCurrent);
+  const boundary = getLevelBoundary(diffContext);
+  // Siblings matched out of order were already diffed.
+  while (nextSibling && nextSibling !== boundary && isMatchedSibling(diffContext, nextSibling)) {
+    nextSibling = peekNextSibling(nextSibling);
+  }
+  return nextSibling === boundary ? null : nextSibling;
+}
+
+function isMatchedSibling(diffContext: DiffContext, vNode: VNode): boolean {
+  return (diffContext.$vSideBuffer$?.get(vNode) ?? -1) >= 0;
+}
+
+const _hasOwnProperty = Object.prototype.hasOwnProperty;
+
+/** Helper to set an attribute on a vnode. Extracted to module scope to avoid closure allocation. */
+function setAttribute(
+  journal: VNodeJournal,
+  vnode: ElementVNode,
+  key: string,
+  value: any,
+  scopedStyleIdPrefix: string | null,
+  originalValue: any
+) {
+  qTest &&
+    scopedStyleIdPrefix &&
+    vnode_setProp(vnode, debugStyleScopeIdPrefixAttr, scopedStyleIdPrefix);
+  vnode_setProp(vnode, key, originalValue);
+  addVNodeOperation(
+    journal,
+    createSetAttributeOperation(
+      vnode.node,
+      key,
+      value,
+      scopedStyleIdPrefix,
+      (vnode.flags & VNodeFlags.NS_svg) !== 0
+    )
+  );
+}
+
+export function createDiffContext(
+  container: ClientContainer,
+  journal: VNodeJournal,
+  cursor: Cursor,
+  scopedStyleIdPrefix: string | null
+): DiffContext {
+  return {
+    $container$: container,
+    $journal$: journal,
+    $cursor$: cursor,
+    $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+    $stack$: [],
+    $asyncQueue$: [],
+    $asyncAttributePromises$: [],
+    $vParent$: null!,
+    $vCurrent$: null,
+    $vNewNode$: null,
+    $vEnd$: null,
+    $vEndParent$: null,
+    $vSiblings$: null,
+    $vSiblingsArray$: null,
+    $vSideBuffer$: null,
+    $vUnmatched$: null,
+    $jsxChildren$: null!,
+    $jsxValue$: null,
+    $jsxIdx$: 0,
+    $jsxCount$: 0,
+    $shouldAdvance$: true,
+    $isCreationMode$: false,
+    $subscriptionData$: {
+      $const$: new SubscriptionData({
+        $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+        $isConst$: true,
+      }),
+      $var$: new SubscriptionData({
+        $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+        $isConst$: false,
+      }),
+    },
+  };
+}
+
+function prepareDiffContext(
+  diffContext: DiffContext,
+  container: ClientContainer,
+  journal: VNodeJournal,
+  cursor: Cursor,
+  scopedStyleIdPrefix: string | null
+) {
+  diffContext.$container$ = container;
+  diffContext.$journal$ = journal;
+  diffContext.$cursor$ = cursor;
+  diffContext.$scopedStyleIdPrefix$ = scopedStyleIdPrefix;
+  diffContext.$subscriptionData$.$const$.data.$scopedStyleIdPrefix$ = scopedStyleIdPrefix;
+  diffContext.$subscriptionData$.$var$.data.$scopedStyleIdPrefix$ = scopedStyleIdPrefix;
+  diffContext.$asyncQueue$.length = 0;
+  diffContext.$asyncAttributePromises$.length = 0;
+}
+
+function getPreparedDiffContext(
+  diffContext: DiffContext | undefined,
+  container: ClientContainer,
+  journal: VNodeJournal,
+  cursor: Cursor,
+  scopedStyleIdPrefix: string | null
+) {
+  const reusableDiffContext =
+    diffContext ?? createDiffContext(container, journal, cursor, scopedStyleIdPrefix);
+  prepareDiffContext(reusableDiffContext, container, journal, cursor, scopedStyleIdPrefix);
+  return reusableDiffContext;
+}
+
+export const vnode_diff = (
+  container: ClientContainer,
+  journal: VNodeJournal,
+  jsxNode: JSXChildren,
+  vStartNode: VNode,
+  cursor: Cursor,
+  scopedStyleIdPrefix: string | null,
+  diffContext?: DiffContext
+) => {
+  return runDiff(
+    getPreparedDiffContext(diffContext, container, journal, cursor, scopedStyleIdPrefix),
+    jsxNode,
+    vStartNode
+  );
+};
+
+export const vnode_diff_range = (
+  container: ClientContainer,
+  journal: VNodeJournal,
+  jsxNode: JSXChildren,
+  vParent: ElementVNode | VirtualVNode,
+  vCurrent: VNode | null,
+  vEnd: VNode | null,
+  cursor: Cursor,
+  scopedStyleIdPrefix: string | null,
+  // Allows callers diffing into an empty known-new range to skip keyed-sibling materialization.
+  forceCreationMode = false,
+  diffContext?: DiffContext
+) => {
+  return runDiff(
+    getPreparedDiffContext(diffContext, container, journal, cursor, scopedStyleIdPrefix),
+    jsxNode,
+    vParent,
+    vCurrent,
+    vEnd,
+    forceCreationMode
+  );
+};
+
+//////////////////////////////////////////////
+//////////////////////////////////////////////
+//////////////////////////////////////////////
+
+function runDiff(
+  diffContext: DiffContext,
+  jsxNode: JSXChildren,
+  vStartNode: VNode,
+  vCurrent: VNode | null = vnode_getFirstChild(vStartNode),
+  vEnd: VNode | null = null,
+  forceCreationMode = false
+) {
+  diff(diffContext, jsxNode, vStartNode, vCurrent, vEnd, forceCreationMode);
+  const result = drainAsyncQueue(diffContext);
+
+  // Cleanup diffContext after completion
+  if (isPromise(result)) {
+    return result.finally(() => {
+      cleanupDiffContext(diffContext);
+    });
+  } else {
+    cleanupDiffContext(diffContext);
+  }
+}
+
+function diff(
+  diffContext: DiffContext,
+  jsxNode: JSXChildren,
+  vStartNode: VNode,
+  vCurrent: VNode | null = vnode_getFirstChild(vStartNode),
+  vEnd: VNode | null = null,
+  forceCreationMode = false
+) {
+  const previousCreationMode = diffContext.$isCreationMode$;
+  isDev && assertFalse(vnode_isVNode(jsxNode), 'JSXNode should not be a VNode');
+  isDev && assertTrue(vnode_isVNode(vStartNode), 'vStartNode should be a VNode');
+  diffContext.$isCreationMode$ = forceCreationMode || previousCreationMode;
+  diffContext.$vParent$ = vStartNode as ElementVNode | VirtualVNode;
+  diffContext.$vNewNode$ = null;
+  diffContext.$vCurrent$ = vCurrent;
+  diffContext.$vEnd$ = vEnd;
+  diffContext.$vEndParent$ = vStartNode as ElementVNode | VirtualVNode;
+  stackPush(diffContext, jsxNode, true);
+
+  try {
+    if (diffContext.$vParent$.flags & VNodeFlags.Deleted) {
+      // Ignore diff if the parent is deleted.
+      return;
+    }
+
+    while (diffContext.$stack$.length) {
+      while (diffContext.$jsxIdx$ < diffContext.$jsxCount$) {
+        isDev &&
+          assertFalse(
+            diffContext.$vParent$ === diffContext.$vCurrent$,
+            "Parent and current can't be the same"
+          );
+        if (typeof diffContext.$jsxValue$ === 'string') {
+          expectText(diffContext, diffContext.$jsxValue$);
+        } else if (typeof diffContext.$jsxValue$ === 'number') {
+          expectText(diffContext, String(diffContext.$jsxValue$));
+        } else if (diffContext.$jsxValue$ && typeof diffContext.$jsxValue$ === 'object') {
+          if (isJSXNode(diffContext.$jsxValue$)) {
+            const type = diffContext.$jsxValue$.type;
+            if (typeof type === 'string') {
+              expectNoTextNode(diffContext);
+              expectElement(diffContext, diffContext.$jsxValue$, type);
+
+              const hasDangerousInnerHTML =
+                (diffContext.$jsxValue$.constProps &&
+                  _hasOwnProperty.call(
+                    diffContext.$jsxValue$.constProps,
+                    dangerouslySetInnerHTML
+                  )) ||
+                _hasOwnProperty.call(diffContext.$jsxValue$.varProps, dangerouslySetInnerHTML);
+              if (hasDangerousInnerHTML) {
+                // Only clean up children for existing nodes; new nodes have no children yet
+                if (!diffContext.$vNewNode$) {
+                  expectNoChildren(diffContext, false);
+                }
+              } else {
+                descend(diffContext, diffContext.$jsxValue$.children, true);
+              }
+            } else if (typeof type === 'function') {
+              if (type === Fragment) {
+                expectNoTextNode(diffContext);
+                expectVirtual(diffContext, VirtualType.Fragment, diffContext.$jsxValue$.key);
+                descend(diffContext, diffContext.$jsxValue$.children, true);
+              } else if (type === Slot) {
+                expectNoTextNode(diffContext);
+                if (!expectSlot(diffContext)) {
+                  // nothing to project, so try to render the Slot default content.
+                  descend(diffContext, diffContext.$jsxValue$.children, true, true);
+                }
+              } else if (type === Projection) {
+                expectProjection(diffContext);
+                descend(
+                  diffContext,
+                  diffContext.$jsxValue$.children,
+                  true,
+                  /* isProjection */ true
+                );
+              } else if (type === SSRComment) {
+                expectNoMore(diffContext);
+              } else if (type === SSRRaw) {
+                expectNoMore(diffContext);
+              } else {
+                // Must be a component
+                expectNoTextNode(diffContext);
+                expectComponent(diffContext, type);
+              }
+            }
+          } else if (Array.isArray(diffContext.$jsxValue$)) {
+            descend(diffContext, diffContext.$jsxValue$, false);
+          } else if (isSignal(diffContext.$jsxValue$)) {
+            expectVirtual(diffContext, VirtualType.WrappedSignal, null);
+            const unwrappedSignal =
+              diffContext.$jsxValue$ instanceof WrappedSignalImpl
+                ? diffContext.$jsxValue$.$unwrapIfSignal$()
+                : diffContext.$jsxValue$;
+            const signals = diffContext.$vCurrent$?.[_EFFECT_BACK_REF]?.get(
+              EffectProperty.VNODE
+            )?.backRef;
+            let hasUnwrappedSignal = signals?.has(unwrappedSignal);
+            if (signals && unwrappedSignal instanceof WrappedSignalImpl) {
+              hasUnwrappedSignal = containsWrappedSignal(signals, unwrappedSignal);
+            }
+            if (!hasUnwrappedSignal) {
+              const vHost = (diffContext.$vNewNode$ || diffContext.$vCurrent$)!;
+              descend(
+                diffContext,
+                resolveSignalAndDescend(diffContext, () =>
+                  trackSignalAndAssignHost(
+                    unwrappedSignal,
+                    vHost,
+                    EffectProperty.VNODE,
+                    diffContext.$container$
+                  )
+                ),
+                true
+              );
+            }
+          } else if (isPromise(diffContext.$jsxValue$)) {
+            expectVirtual(diffContext, VirtualType.Awaited, null);
+            diffContext.$asyncQueue$.push(
+              diffContext.$jsxValue$,
+              diffContext.$vNewNode$ || diffContext.$vCurrent$
+            );
+          }
+        } else if (diffContext.$jsxValue$ === (SkipRender as JSXChildren)) {
+          // do nothing, we are skipping this node
+        } else {
+          expectText(diffContext, '');
+        }
+        advance(diffContext);
+      }
+      expectNoMore(diffContext);
+      cleanupSideBuffer(diffContext);
+      ascend(diffContext);
+    }
+  } finally {
+    diffContext.$isCreationMode$ = previousCreationMode;
+  }
+}
+
+function resolveSignalAndDescend(
+  diffContext: DiffContext,
+  fn: () => ValueOrPromise<any>
+): ValueOrPromise<any> {
+  try {
+    return fn();
+  } catch (e) {
+    // Signal threw a promise (async computed signal) - handle retry and async queue
+    if (isPromise(e)) {
+      // The thrown promise will resolve when the signal is ready, then retry fn() with retry logic
+      const retryPromise = e.then(() => retryOnPromise(fn));
+      diffContext.$asyncQueue$.push(retryPromise, diffContext.$vNewNode$ || diffContext.$vCurrent$);
+      return null;
+    }
+    throw e;
+  }
+}
+
+function advance(diffContext: DiffContext) {
+  if (!diffContext.$shouldAdvance$) {
+    diffContext.$shouldAdvance$ = true;
+    return;
+  }
+  diffContext.$jsxIdx$++;
+  if (diffContext.$jsxIdx$ < diffContext.$jsxCount$) {
+    diffContext.$jsxValue$ = diffContext.$jsxChildren$![diffContext.$jsxIdx$];
+  } else if (
+    diffContext.$stack$.length > 0 &&
+    diffContext.$stack$[diffContext.$stack$.length - 1] === false
+  ) {
+    // this was special `descendVNode === false` so pop and try again
+    return ascend(diffContext);
+  }
+  const vMatched = diffContext.$vNewNode$ || diffContext.$vCurrent$;
+  if (diffContext.$vSideBuffer$ && vMatched) {
+    // Re-insert to record the new order.
+    diffContext.$vSideBuffer$.delete(vMatched);
+    diffContext.$vSideBuffer$.set(vMatched, 0);
+    let vUnmatched = diffContext.$vUnmatched$;
+    if (vUnmatched && isMatchedSibling(diffContext, vUnmatched)) {
+      vUnmatched = peekNextSiblingWithinBoundary(diffContext, vUnmatched);
+    }
+    diffContext.$vCurrent$ = diffContext.$vUnmatched$ = vUnmatched;
+    diffContext.$vNewNode$ = null;
+    return;
+  }
+  if (diffContext.$vNewNode$ !== null) {
+    // We have a new Node.
+    // This means that the `vCurrent` was deemed not useful and we inserted in front of it.
+    // This means that the next node we should look at is the `vCurrent` so just clear the
+    // vNewNode  and try again.
+    diffContext.$vNewNode$ = null;
+  } else {
+    diffContext.$vCurrent$ = peekNextSiblingWithinBoundary(diffContext, diffContext.$vCurrent$);
+  }
+}
+
+/**
+ * @param children
+ * @param descendVNode - If true we are descending into vNode; This is set to false if we come
+ *   across an array in jsx, and we need to descend into the array without actually descending into
+ *   the vNode.
+ *
+ *   Example:
+ *
+ *   ```
+ *   <>
+ *   before
+ *   {[1,2].map((i) => <span>{i}</span>)}
+ *   after
+ *   </>
+ * ```
+ *
+ *   In the above example all nodes are on same level so we don't `descendVNode` even thought there is
+ *   an array produced by the `map` function.
+ * @param isProjection - True when descending into a Projection, whose children survive re-renders:
+ *   they are diffed against (never re-created) and kept when the new JSX has no children.
+ */
+function descend(
+  diffContext: DiffContext,
+  children: JSXChildren,
+  descendVNode: boolean,
+  isProjection: boolean = false
+) {
+  if (
+    !isProjection &&
+    (children == null || (descendVNode && isArray(children) && children.length === 0))
+  ) {
+    expectNoChildren(diffContext);
+    return;
+  }
+  stackPush(diffContext, children, descendVNode);
+  if (descendVNode) {
+    isDev &&
+      assertDefined(
+        diffContext.$vCurrent$ || diffContext.$vNewNode$,
+        'Expecting vCurrent to be defined.'
+      );
+    const creationMode =
+      // a projection keeps its children across re-renders, so it never inherits
+      // creation mode from a not-yet-rendered host; create only if new or empty
+      (!isProjection && diffContext.$isCreationMode$) ||
+      !!diffContext.$vNewNode$ ||
+      !vnode_getFirstChild(diffContext.$vCurrent$!);
+
+    diffContext.$isCreationMode$ = creationMode;
+    diffContext.$vSideBuffer$ = null;
+    diffContext.$vUnmatched$ = null;
+    diffContext.$vSiblings$ = null;
+    diffContext.$vSiblingsArray$ = null;
+    diffContext.$vParent$ = (diffContext.$vNewNode$ || diffContext.$vCurrent$!) as
+      | ElementVNode
+      | VirtualVNode;
+    diffContext.$vCurrent$ = vnode_getFirstChild(diffContext.$vParent$!);
+    diffContext.$vNewNode$ = null;
+  }
+  diffContext.$shouldAdvance$ = false;
+}
+
+function ascend(diffContext: DiffContext) {
+  const descendVNode = diffContext.$stack$.pop(); // boolean: descendVNode
+  if (descendVNode) {
+    diffContext.$isCreationMode$ = diffContext.$stack$.pop();
+    diffContext.$vUnmatched$ = diffContext.$stack$.pop();
+    diffContext.$vSideBuffer$ = diffContext.$stack$.pop();
+    diffContext.$vSiblings$ = diffContext.$stack$.pop();
+    diffContext.$vSiblingsArray$ = diffContext.$stack$.pop();
+    diffContext.$vNewNode$ = diffContext.$stack$.pop();
+    diffContext.$vCurrent$ = diffContext.$stack$.pop();
+    diffContext.$vParent$ = diffContext.$stack$.pop();
+  }
+  diffContext.$jsxValue$ = diffContext.$stack$.pop();
+  diffContext.$jsxCount$ = diffContext.$stack$.pop();
+  diffContext.$jsxIdx$ = diffContext.$stack$.pop();
+  diffContext.$jsxChildren$ = diffContext.$stack$.pop();
+  advance(diffContext);
+}
+
+function stackPush(diffContext: DiffContext, children: JSXChildren, descendVNode: boolean) {
+  diffContext.$stack$.push(
+    diffContext.$jsxChildren$,
+    diffContext.$jsxIdx$,
+    diffContext.$jsxCount$,
+    diffContext.$jsxValue$
+  );
+  if (descendVNode) {
+    diffContext.$stack$.push(
+      diffContext.$vParent$,
+      diffContext.$vCurrent$,
+      diffContext.$vNewNode$,
+      diffContext.$vSiblingsArray$,
+      diffContext.$vSiblings$,
+      diffContext.$vSideBuffer$,
+      diffContext.$vUnmatched$,
+      diffContext.$isCreationMode$
+    );
+  }
+  diffContext.$stack$.push(descendVNode);
+  if (Array.isArray(children)) {
+    diffContext.$jsxIdx$ = 0;
+    diffContext.$jsxCount$ = children.length;
+    diffContext.$jsxChildren$ = children;
+    diffContext.$jsxValue$ = diffContext.$jsxCount$ > 0 ? children[0] : null;
+  } else if (children === undefined) {
+    // no children
+    diffContext.$jsxIdx$ = 0;
+    diffContext.$jsxValue$ = null;
+    diffContext.$jsxChildren$ = null!;
+    diffContext.$jsxCount$ = 0;
+  } else {
+    diffContext.$jsxIdx$ = 0;
+    diffContext.$jsxValue$ = children;
+    diffContext.$jsxChildren$ = null!;
+    diffContext.$jsxCount$ = 1;
+  }
+}
+
+function getInsertBefore(diffContext: DiffContext) {
+  if (diffContext.$vNewNode$) {
+    return getCurrentInsertBefore(diffContext);
+  }
+  return (
+    peekNextSiblingWithinBoundary(diffContext, diffContext.$vCurrent$) ||
+    getLevelBoundary(diffContext)
+  );
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+function descendContentToProject(
+  diffContext: DiffContext,
+  children: JSXChildren,
+  host: VirtualVNode | null
+) {
+  const projectionChildren = Array.isArray(children) ? children : [children];
+  const createProjectionJSXNode = (slotName: string) => {
+    return new JSXNodeImpl(Projection, null, null, [], 0, slotName);
+  };
+
+  const projections: Array<string | JSXNodeInternal> = [];
+  if (host) {
+    const props = host.props;
+    if (props) {
+      // we need to create empty projections for all the slots to remove unused slots content
+      for (const prop in props) {
+        if (isSlotProp(prop) && (props[prop] as VNode | null)?.slotParent) {
+          const slotName = prop;
+          mapArray_set(projections, slotName, createProjectionJSXNode(slotName), 0);
+        }
+      }
+    }
+  }
+
+  if (projections.length === 0 && children == null) {
+    // We did not find any existing slots and we don't have any children to project.
+    return;
+  }
+
+  /// STEP 1: Bucketize the children based on the projection name.
+  for (let i = 0; i < projectionChildren.length; i++) {
+    const child = projectionChildren[i];
+    const slotName = String(
+      (isJSXNode(child) && directGetPropsProxyProp(child, QSlot)) || QDefaultSlot
+    );
+    const idx = mapApp_findIndx(projections, slotName, 0);
+    let jsxBucket: JSXNodeImpl<typeof Projection>;
+    if (idx >= 0) {
+      jsxBucket = projections[idx + 1] as any;
+    } else {
+      projections.splice(~idx, 0, slotName, (jsxBucket = createProjectionJSXNode(slotName)));
+    }
+    const removeProjection = child === false;
+    if (!removeProjection) {
+      (jsxBucket.children as JSXChildren[]).push(child);
+    }
+  }
+  /// STEP 2: remove the names
+  for (let i = projections.length - 2; i >= 0; i = i - 2) {
+    projections.splice(i, 1);
+  }
+  descend(diffContext, projections, true);
+}
+
+function expectProjection(diffContext: DiffContext) {
+  const jsxNode = diffContext.$jsxValue$ as JSXNodeInternal;
+  const slotName = jsxNode.key as string;
+  // console.log('expectProjection', JSON.stringify(slotName));
+  // The parent is the component and it should have our portal.
+  diffContext.$vCurrent$ = vnode_getProp<VNode | null>(
+    diffContext.$vParent$ as VirtualVNode,
+    slotName,
+    (id: string) => vnode_locate(diffContext.$container$.rootVNode, id)
+  );
+  // if projection is marked as deleted then we need to create a new one
+  diffContext.$vCurrent$ =
+    diffContext.$vCurrent$ && diffContext.$vCurrent$.flags & VNodeFlags.Deleted
+      ? null
+      : diffContext.$vCurrent$;
+  if (diffContext.$vCurrent$ == null) {
+    diffContext.$vNewNode$ = vnode_newVirtual();
+    // you may be tempted to add the projection into the current parent, but
+    // that is wrong. We don't yet know if the projection will be projected, so
+    // we should leave it unattached.
+    // vNewNode[VNodeProps.parent] = vParent;
+    isDev &&
+      vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, DEBUG_TYPE, VirtualType.Projection);
+    isDev && vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, 'q:code', 'expectProjection');
+    vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, QSlot, slotName);
+    vnode_setProp(diffContext.$vParent$ as VirtualVNode, slotName, diffContext.$vNewNode$);
+  }
+  (diffContext.$vNewNode$ || diffContext.$vCurrent$)!.slotParent = diffContext.$vParent$;
+}
+
+function expectSlot(diffContext: DiffContext) {
+  const jsxNode = diffContext.$jsxValue$ as JSXNodeInternal;
+  const vHost = vnode_getProjectionParentComponent(diffContext.$vParent$);
+
+  const slotNameKey = resolveSlotName(vHost, jsxNode, diffContext.$container$);
+  const cursorBoundary =
+    directGetPropsProxyProp<CursorBoundary | null, any>(jsxNode, QCursorBoundary) || null;
+
+  const vProjectedNode = vHost
+    ? vnode_getProp<VirtualVNode | null>(
+        vHost as VirtualVNode,
+        slotNameKey,
+        // for slots this id is vnode ref id
+        null // Projections should have been resolved through container.ensureProjectionResolved
+        //(id) => vnode_locate(container.rootVNode, id)
+      )
+    : null;
+
+  if (
+    vProjectedNode == null ||
+    (!vProjectedNode.slotParent && vProjectedNode.flags & VNodeFlags.Deleted)
+  ) {
+    diffContext.$vNewNode$ = vnode_newVirtual();
+    vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, QSlot, slotNameKey);
+    vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, QCursorBoundary, cursorBoundary);
+    updateDirtySubtreeCursorBoundary(diffContext.$vNewNode$ as VirtualVNode, cursorBoundary);
+    vHost && vnode_setProp(vHost as VirtualVNode, slotNameKey, diffContext.$vNewNode$);
+    isDev &&
+      vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, DEBUG_TYPE, VirtualType.Projection); // Nothing to project, so render content of the slot.
+    vnode_insertBefore(
+      diffContext.$journal$,
+      diffContext.$vParent$ as ElementVNode | VirtualVNode,
+      diffContext.$vNewNode$,
+      getInsertBefore(diffContext)
+    );
+    return false;
+  } else if (vProjectedNode === diffContext.$vCurrent$) {
+    // All is good.
+  } else {
+    // move from q:template to the target node
+    const oldParent = vProjectedNode.parent;
+    diffContext.$vNewNode$ = vProjectedNode;
+    vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, QSlot, slotNameKey);
+    vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, QCursorBoundary, cursorBoundary);
+    updateDirtySubtreeCursorBoundary(diffContext.$vNewNode$ as VirtualVNode, cursorBoundary);
+    vHost && vnode_setProp(vHost as VirtualVNode, slotNameKey, diffContext.$vNewNode$);
+    isDev &&
+      vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, DEBUG_TYPE, VirtualType.Projection);
+    vnode_inflateProjectionTrailingText(
+      diffContext.$journal$,
+      diffContext.$vNewNode$ as VirtualVNode
+    );
+    vnode_insertBefore(
+      diffContext.$journal$,
+      diffContext.$vParent$ as ElementVNode | VirtualVNode,
+      diffContext.$vNewNode$,
+      getInsertBefore(diffContext)
+    );
+
+    const isUnclaimedProjection =
+      oldParent && vnode_isElementVNode(oldParent) && vnode_getElementName(oldParent) === QTemplate;
+    if (isUnclaimedProjection) {
+      const template = oldParent.node as QElement;
+      if (template._qInit) {
+        template._qInit = false;
+        queueQwikLoaderEvent(getCursorData(diffContext.$cursor$)!, QwikLoaderScanEvent.qinit);
+      }
+      if (template._qIdle) {
+        template._qIdle = false;
+        queueQwikLoaderEvent(getCursorData(diffContext.$cursor$)!, QwikLoaderScanEvent.qidle);
+      }
+    }
+
+    // If we moved from a q:template and it's now empty, remove it
+    if (isUnclaimedProjection && !oldParent.firstChild) {
+      vnode_remove(
+        diffContext.$journal$,
+        oldParent.parent as ElementVNode | VirtualVNode,
+        oldParent,
+        true
+      );
+    }
+  }
+  return !!vProjectedNode.slotParent;
+}
+
+function cleanupSideBuffer(diffContext: DiffContext) {
+  const sideBuffer = diffContext.$vSideBuffer$;
+  if (sideBuffer) {
+    removeUnmatchedSiblings(diffContext, sideBuffer);
+    reorderMatchedSiblings(diffContext, sideBuffer);
+    diffContext.$vSideBuffer$ = null;
+  }
+  diffContext.$vCurrent$ = null;
+}
+
+function removeUnmatchedSiblings(diffContext: DiffContext, sideBuffer: Map<VNode, number>) {
+  const vParent = diffContext.$vParent$;
+  for (const [vNode, matchState] of sideBuffer) {
+    // A projection can be moved to another parent while matching.
+    const isStillChild = vNode.parent === vParent;
+    if (matchState >= 0 && isStillChild) {
+      continue;
+    }
+    sideBuffer.delete(vNode);
+    if (isStillChild && !(vNode.flags & VNodeFlags.Deleted)) {
+      cleanup(diffContext.$container$, diffContext.$journal$, vNode, diffContext.$cursor$);
+      vnode_remove(diffContext.$journal$, vParent, vNode, true);
+    }
+  }
+}
+
+/** Moves the matched siblings into the new order, comparing both ends to keep moves minimal. */
+function reorderMatchedSiblings(diffContext: DiffContext, sideBuffer: Map<VNode, number>) {
+  const journal = diffContext.$journal$;
+  const vParent = diffContext.$vParent$;
+  const boundary = getLevelBoundary(diffContext);
+  const newOrder = Array.from(sideBuffer.keys());
+  let newFirstIdx = 0;
+  let newLastIdx = newOrder.length - 1;
+  let vOldLast = (boundary ? boundary.previousSibling : vParent.lastChild) as VNode | null;
+  let vOldFirst = vOldLast;
+  while (vOldFirst?.previousSibling && sideBuffer.has(vOldFirst.previousSibling)) {
+    vOldFirst = vOldFirst.previousSibling;
+  }
+  while (newFirstIdx <= newLastIdx) {
+    const vNewFirst = newOrder[newFirstIdx];
+    const vNewLast = newOrder[newLastIdx];
+    if (vOldFirst === vNewFirst) {
+      vOldFirst = vOldFirst.nextSibling as VNode | null;
+      newFirstIdx++;
+    } else if (vOldLast === vNewLast) {
+      vOldLast = vOldLast.previousSibling as VNode | null;
+      newLastIdx--;
+    } else if (vOldLast === vNewFirst) {
+      const vOldBeforeLast = vOldLast.previousSibling as VNode | null;
+      vnode_insertBefore(journal, vParent, vOldLast, vOldFirst);
+      vOldLast = vOldBeforeLast;
+      newFirstIdx++;
+    } else if (vOldFirst === vNewLast) {
+      const vOldAfterFirst = vOldFirst.nextSibling as VNode | null;
+      vnode_insertBefore(journal, vParent, vOldFirst, vOldLast!.nextSibling as VNode | null);
+      vOldFirst = vOldAfterFirst;
+      newLastIdx--;
+    } else {
+      vnode_insertBefore(journal, vParent, vNewFirst, vOldFirst);
+      newFirstIdx++;
+    }
+  }
+}
+
+function drainAsyncQueue(diffContext: DiffContext): ValueOrPromise<void> {
+  while (diffContext.$asyncQueue$.length) {
+    const jsxNode = diffContext.$asyncQueue$.shift() as ValueOrPromise<JSXChildren>;
+    const vHostNode = diffContext.$asyncQueue$.shift() as VNode;
+
+    if (isPromise(jsxNode)) {
+      return jsxNode
+        .then((jsxNode) => {
+          diff(diffContext, jsxNode, vHostNode);
+          return drainAsyncQueue(diffContext);
+        })
+        .catch((e) => {
+          diffContext.$container$.handleError(e, vHostNode);
+          return drainAsyncQueue(diffContext);
+        });
+    } else {
+      diff(diffContext, jsxNode, vHostNode);
+    }
+  }
+  // Wait for all async attribute promises to complete, then check for more work
+  if (diffContext.$asyncAttributePromises$.length) {
+    const promises = diffContext.$asyncAttributePromises$.splice(0);
+    return Promise.all(promises).then(() => {
+      // After attributes are set, check if there's more work in the queue
+      return drainAsyncQueue(diffContext);
+    });
+  }
+}
+
+function cleanupDiffContext(diffContext: DiffContext): void {
+  diffContext.$journal$ = null!;
+  diffContext.$cursor$ = null!;
+}
+
+function expectNoChildren(diffContext: DiffContext, removeDOM = true) {
+  const vFirstChild = diffContext.$vCurrent$ && vnode_getFirstChild(diffContext.$vCurrent$);
+  if (vFirstChild !== null) {
+    let vChild: VNode | null = vFirstChild;
+    while (vChild) {
+      cleanup(diffContext.$container$, diffContext.$journal$, vChild, diffContext.$cursor$);
+      vChild = vChild.nextSibling as VNode | null;
+    }
+    vnode_truncate(
+      diffContext.$journal$,
+      diffContext.$vCurrent$ as ElementVNode | VirtualVNode,
+      vFirstChild,
+      removeDOM
+    );
+  }
+}
+
+/** Expect no more nodes - Any nodes which are still at cursor, need to be removed. */
+function expectNoMore(diffContext: DiffContext) {
+  const boundary = getLevelBoundary(diffContext);
+  isDev &&
+    assertFalse(
+      diffContext.$vParent$ === diffContext.$vCurrent$,
+      "Parent and current can't be the same"
+    );
+  if (diffContext.$vCurrent$ !== null && diffContext.$vCurrent$ !== boundary) {
+    while (diffContext.$vCurrent$ && diffContext.$vCurrent$ !== boundary) {
+      const toRemove = diffContext.$vCurrent$;
+      diffContext.$vCurrent$ = peekNextSiblingWithinBoundary(diffContext, diffContext.$vCurrent$);
+      if (diffContext.$vParent$ === toRemove.parent) {
+        cleanup(diffContext.$container$, diffContext.$journal$, toRemove, diffContext.$cursor$);
+        // If we are diffing projection than the parent is not the parent of the node.
+        // If that is the case we don't want to remove the node from the parent.
+        vnode_remove(diffContext.$journal$, diffContext.$vParent$, toRemove, true);
+      }
+    }
+  }
+}
+
+function expectNoTextNode(diffContext: DiffContext) {
+  if (diffContext.$vCurrent$ !== null && vnode_isTextVNode(diffContext.$vCurrent$)) {
+    const toRemove = diffContext.$vCurrent$;
+    diffContext.$vCurrent$ = peekNextSiblingWithinBoundary(diffContext, diffContext.$vCurrent$);
+    if (diffContext.$vUnmatched$ === toRemove) {
+      diffContext.$vUnmatched$ = diffContext.$vCurrent$;
+    }
+    diffContext.$vSideBuffer$?.delete(toRemove);
+    vnode_remove(diffContext.$journal$, diffContext.$vParent$, toRemove, true);
+  }
+}
+
+function applyRef(
+  value: unknown,
+  element: QElement,
+  currentFile: string | null | undefined
+): boolean {
+  if (isSignal(value)) {
+    value.value = element;
+    return true;
+  }
+  if (typeof value === 'function') {
+    value(element);
+    return true;
+  }
+  if (value == null) {
+    return true;
+  }
+  throw qError(QError.invalidRefValue, [currentFile]);
+}
+
+function resolveSignalValue(
+  container: ClientContainer,
+  vHost: ElementVNode,
+  key: string,
+  signal: Signal<unknown>,
+  subscriptionData: SubscriptionData
+): unknown {
+  return retryOnPromise(() =>
+    trackSignalAndAssignHost(signal, vHost, key, container, subscriptionData)
+  );
+}
+
+function queueConstAttributePromise(
+  diffContext: DiffContext,
+  element: QElement,
+  key: string,
+  value: Promise<unknown>,
+  isSvg: boolean
+) {
+  const scopedStyleIdPrefix = diffContext.$scopedStyleIdPrefix$;
+  const attributePromise = value.then((resolvedValue) =>
+    key === dangerouslySetInnerHTML
+      ? applyConstInnerHtml(element, resolvedValue)
+      : directSetAttribute(
+          element,
+          key,
+          serializeAttribute(key, resolvedValue, scopedStyleIdPrefix),
+          isSvg
+        )
+  );
+  diffContext.$asyncAttributePromises$.push(attributePromise);
+}
+
+function applyConstInnerHtml(element: QElement, value: unknown) {
+  if (value) {
+    element.innerHTML = String(value);
+    element.setAttribute(QContainerAttr, QContainerValue.HTML);
+  }
+}
+
+function applyConstTextareaValue(
+  element: QElement,
+  value: unknown,
+  currentFile: string | null | undefined
+): boolean {
+  if (value && typeof value !== 'string') {
+    if (isDev) {
+      throw qError(QError.wrongTextareaValue, [currentFile, value]);
+    }
+    return true;
+  }
+  (element as HTMLTextAreaElement).value = escapeHTML((value as string) || '');
+  return true;
+}
+
+function createNewElement(
+  diffContext: DiffContext,
+  jsx: JSXNodeInternal,
+  elementName: string,
+  currentFile: string | null
+) {
+  const element = createElementWithNamespace(diffContext, elementName) as QElement;
+  if (isDev && qInspector && currentFile && elementName !== 'head') {
+    element.setAttribute(qwikInspectorAttr, currentFile);
+  }
+  const vHost = diffContext.$vNewNode$ as ElementVNode;
+  const isSvg = (vHost.flags & VNodeFlags.NS_svg) !== 0;
+  const { constProps } = jsx;
+  if (constProps) {
+    // Const props are, well, constant, they will never change!
+    // For this reason we can cheat and write them directly into the DOM.
+    // We never tell the vNode about them saving us time and memory.
+    for (const key in constProps) {
+      let value = constProps[key];
+      if (isHtmlAttributeAnEventName(key)) {
+        registerEventHandlers(key, value, element, vHost, diffContext);
+
+        continue;
+      }
+
+      if (key === 'ref' && applyRef(value, element, currentFile)) {
+        continue;
+      }
+
+      if (isSignal(value)) {
+        value = resolveSignalValue(
+          diffContext.$container$,
+          diffContext.$vNewNode$ as ElementVNode,
+          key,
+          value as Signal<unknown>,
+          diffContext.$subscriptionData$.$const$
+        );
+      }
+
+      if (isPromise(value)) {
+        queueConstAttributePromise(diffContext, element, key, value, isSvg);
+        continue;
+      }
+
+      if (key === dangerouslySetInnerHTML) {
+        applyConstInnerHtml(element, value);
+        continue;
+      }
+
+      if (
+        elementName === 'textarea' &&
+        key === 'value' &&
+        applyConstTextareaValue(element, value, currentFile)
+      ) {
+        continue;
+      }
+
+      directSetAttribute(
+        element,
+        key,
+        serializeAttribute(key, value, diffContext.$scopedStyleIdPrefix$),
+        isSvg
+      );
+    }
+  }
+  const key = jsx.key;
+  if (key) {
+    (diffContext.$vNewNode$ as ElementVNode).key = key;
+  }
+
+  // append class attribute if styleScopedId exists and there is no class attribute
+  if (diffContext.$scopedStyleIdPrefix$) {
+    const classAttributeExists =
+      _hasOwnProperty.call(jsx.varProps, 'class') ||
+      (jsx.constProps && _hasOwnProperty.call(jsx.constProps, 'class'));
+    if (!classAttributeExists) {
+      element.setAttribute('class', diffContext.$scopedStyleIdPrefix$);
+    }
+  }
+
+  vnode_insertElementBefore(
+    diffContext.$journal$,
+    diffContext.$vParent$ as ElementVNode,
+    diffContext.$vNewNode$ as ElementVNode,
+    getCurrentInsertBefore(diffContext)
+  );
+}
+
+function registerEventHandlers(
+  key: string,
+  value: unknown,
+  element: QElement,
+  vnode: ElementVNode,
+  diffContext: DiffContext
+) {
+  const scopedKebabName = key.slice(2);
+  if (Array.isArray(value)) {
+    const arr = value as (QRLInternal<(...args: any[]) => void> | undefined)[];
+    const handlers: EventHandler[] = [];
+    for (let i = 0; i < arr.length; i++) {
+      const item = arr[i];
+      if (Array.isArray(item)) {
+        for (let j = 0; j < item.length; j++) {
+          const handler = item[j];
+          if (handler) {
+            handlers.push(runEventHandlerQRL.bind(null, handler));
+          }
+        }
+      } else if (item) {
+        handlers.push(runEventHandlerQRL.bind(null, item));
+      }
+    }
+    if (handlers.length > 0) {
+      (element._qDispatch ||= {})[scopedKebabName] = handlers.length === 1 ? handlers[0] : handlers;
+    }
+  } else if (value) {
+    (element._qDispatch ||= {})[scopedKebabName] = runEventHandlerQRL.bind(
+      null,
+      value as QRLInternal<(...args: any[]) => void>
+    );
+  }
+
+  const isQVisible = scopedKebabName === QwikLoaderScanEvent.qvisible;
+  // window, document and qvisible events need attrs so qwik loader can find them
+  // TODO only do these when not already present
+  if (key.charAt(2) !== 'e' || isQVisible) {
+    vnode_setAttr(diffContext.$journal$, vnode, key, '');
+  }
+  if (
+    isQVisible ||
+    scopedKebabName === QwikLoaderScanEvent.qinit ||
+    scopedKebabName === QwikLoaderScanEvent.qidle
+  ) {
+    // the loader scans the DOM for these, so notify it only after the flush
+    queueQwikLoaderEvent(getCursorData(diffContext.$cursor$)!, scopedKebabName);
+  } else {
+    registerQwikLoaderEvent(diffContext.$container$, scopedKebabName);
+  }
+}
+
+function createElementWithNamespace(diffContext: DiffContext, elementName: string): Element {
+  const domParentVNode = vnode_getDomParentVNode(diffContext.$vParent$, true);
+  const namespaceData = getNewElementNamespaceData(domParentVNode, elementName);
+
+  const currentDocument = qTest ? diffContext.$container$.document : document;
+
+  const element =
+    namespaceData.elementNamespaceFlag === VNodeFlags.NS_html
+      ? currentDocument.createElement(elementName)
+      : currentDocument.createElementNS(namespaceData.elementNamespace, elementName);
+  diffContext.$vNewNode$ = vnode_newElement(element, elementName);
+  diffContext.$vNewNode$.flags |= namespaceData.elementNamespaceFlag;
+  return element;
+}
+
+function expectElement(diffContext: DiffContext, jsx: JSXNodeInternal, elementName: string) {
+  const currentFile = (isDev && getFileLocationFromJsx(jsx.dev)) || null;
+  if (diffContext.$isCreationMode$) {
+    createNewElement(diffContext, jsx, elementName, currentFile);
+  } else {
+    const isElementVNode = diffContext.$vCurrent$ && vnode_isElementVNode(diffContext.$vCurrent$);
+    const isSameElementName =
+      isElementVNode &&
+      elementName === vnode_getElementName(diffContext.$vCurrent$ as ElementVNode);
+    const jsxKey: string | null = jsx.key;
+    const currentKey = isElementVNode && (diffContext.$vCurrent$ as ElementVNode).key;
+    if (
+      (!isSameElementName || jsxKey !== currentKey) &&
+      moveOrCreateKeyedNode(diffContext, elementName, jsxKey)
+    ) {
+      createNewElement(diffContext, jsx, elementName, currentFile);
+    }
+  }
+
+  // reconcile attributes
+
+  const jsxProps = jsx.varProps;
+  const vNode = (diffContext.$vNewNode$ || diffContext.$vCurrent$) as ElementVNode;
+
+  if (jsxProps) {
+    diffProps(diffContext, vNode, jsxProps, currentFile);
+  }
+}
+
+function diffProps(
+  diffContext: DiffContext,
+  vnode: ElementVNode,
+  newAttrs: Record<string, any>,
+  currentFile: string | null
+) {
+  if (!diffContext.$isCreationMode$) {
+    // inflate only resumed vnodes
+    vnode_ensureElementInflated(diffContext.$container$, vnode);
+  }
+  const oldAttrs = vnode.props;
+  const isHtml = (vnode.flags & VNodeFlags.NAMESPACE_MASK) === VNodeFlags.NS_html;
+
+  // Actual diffing logic
+  // Apply all new attributes
+  for (const key in newAttrs) {
+    const newValue = newAttrs[key];
+    // HTML parsers lowercase attribute names.
+    const oldKey =
+      oldAttrs && isHtml && !_hasOwnProperty.call(oldAttrs, key) ? key.toLowerCase() : key;
+
+    if (oldAttrs && _hasOwnProperty.call(oldAttrs, oldKey)) {
+      const oldValue = oldAttrs[oldKey];
+      if (oldKey !== key) {
+        vnode_setProp(vnode, oldKey, null);
+        vnode_setProp(vnode, key, oldValue);
+      }
+      if (
+        !areDiffValuesEqual(newValue, oldValue) &&
+        !(key === 'style' && areStyleValuesEqual(newValue, oldValue)) &&
+        !(key === 'class' && areClassValuesEqual(newValue, oldValue))
+      ) {
+        patchProperty(diffContext, vnode, key, newValue, currentFile);
+      }
+    } else if (newValue != null) {
+      patchProperty(diffContext, vnode, key, newValue, currentFile);
+    }
+  }
+
+  if (oldAttrs) {
+    // Remove attributes that no longer exist in new props
+    for (const key in oldAttrs) {
+      if (
+        !_hasOwnProperty.call(newAttrs, key) &&
+        // do not remove special attributes
+        key.charAt(0) !== ':' &&
+        // we keep these handler props to indicate to qwikloader that these events are used
+        !isHtmlAttributeAnEventName(key)
+      ) {
+        patchProperty(diffContext, vnode, key, null, currentFile);
+      }
+    }
+  }
+}
+
+const patchProperty = (
+  diffContext: DiffContext,
+  vnode: ElementVNode,
+  key: string,
+  value: any,
+  currentFile: string | null
+) => {
+  // During CSR we do handlers via qDispatch
+  if (isHtmlAttributeAnEventName(key)) {
+    registerEventHandlers(key, value, vnode.node as QElement, vnode, diffContext);
+    return;
+  }
+  if (
+    // set only property for iteration item, not an attribute
+    key === ITERATION_ITEM_SINGLE ||
+    key === ITERATION_ITEM_MULTI
+  ) {
+    // TODO: there is a potential deoptimization here, because we are setting different keys on props.
+    // Eager bailout - Insufficient type feedback for generic keyed access
+    vnode_setProp(vnode, key, value);
+    vnode.flags |= VNodeFlags.HasIterationItems | VNodeFlags.InflatedIterationItems;
+    return;
+  }
+  const originalValue = value;
+
+  if (key === 'ref') {
+    const element = vnode.node;
+    if (applyRef(value, element as QElement, currentFile)) {
+      return;
+    }
+  }
+
+  const currentEffect = vnode[_EFFECT_BACK_REF]?.get(key);
+  if (isSignal(value)) {
+    const unwrappedSignal = value instanceof WrappedSignalImpl ? value.$unwrapIfSignal$() : value;
+    if (currentEffect?.backRef?.has(unwrappedSignal)) {
+      return;
+    }
+    if (currentEffect) {
+      clearEffectSubscription(diffContext.$container$, currentEffect);
+    }
+
+    const vHost = vnode as ElementVNode;
+    value = resolveSignalValue(
+      diffContext.$container$,
+      vHost,
+      key,
+      unwrappedSignal,
+      diffContext.$subscriptionData$.$var$
+    );
+  } else {
+    if (currentEffect) {
+      clearEffectSubscription(diffContext.$container$, currentEffect);
+    }
+  }
+
+  if (isPromise(value)) {
+    const vHost = vnode as ElementVNode;
+    const attributePromise = value.then((resolvedValue) => {
+      setAttribute(
+        diffContext.$journal$,
+        vHost,
+        key,
+        resolvedValue,
+        diffContext.$scopedStyleIdPrefix$,
+        originalValue
+      );
+    });
+    diffContext.$asyncAttributePromises$.push(attributePromise);
+    return;
+  }
+
+  setAttribute(
+    diffContext.$journal$,
+    vnode,
+    key,
+    value,
+    diffContext.$scopedStyleIdPrefix$,
+    originalValue
+  );
+};
+
+function retrieveChildWithKey(
+  diffContext: DiffContext,
+  nodeName: string | null,
+  key: string | null
+): ElementVNode | VirtualVNode | null {
+  let vNodeWithKey: ElementVNode | VirtualVNode | null = null;
+  if (diffContext.$vSiblings$ === null) {
+    // check if the current node is the one we are looking for
+    const vCurrent = diffContext.$vCurrent$;
+    if (vCurrent) {
+      const name = vnode_isElementVNode(vCurrent) ? vnode_getElementName(vCurrent) : null;
+      const vKey =
+        getKey(vCurrent as VirtualVNode | ElementVNode | TextVNode | null) ||
+        getComponentHash(vCurrent, diffContext.$container$.$getObjectById$);
+      if (vKey === key && name === nodeName) {
+        return vCurrent as ElementVNode | VirtualVNode;
+      }
+    }
+
+    // it is not materialized; so materialize it.
+    diffContext.$vSiblings$ = new Map<string, VNode>();
+    diffContext.$vSiblingsArray$ = [];
+    diffContext.$vSideBuffer$ = new Map<VNode, number>();
+    diffContext.$vUnmatched$ = diffContext.$vCurrent$;
+    const boundary = getLevelBoundary(diffContext);
+    let vNode = diffContext.$vCurrent$;
+    while (vNode && vNode !== boundary) {
+      diffContext.$vSideBuffer$.set(vNode, -1);
+      const name = vnode_isElementVNode(vNode) ? vnode_getElementName(vNode) : null;
+      const vKey =
+        getKey(vNode as VirtualVNode | ElementVNode | TextVNode | null) ||
+        getComponentHash(vNode, diffContext.$container$.$getObjectById$);
+      if (vNodeWithKey === null && vKey == key && name == nodeName) {
+        vNodeWithKey = vNode as ElementVNode | VirtualVNode;
+      } else {
+        if (vKey === null) {
+          diffContext.$vSiblingsArray$.push(name, vNode);
+        } else {
+          // we only add the elements which we did not find yet.
+          diffContext.$vSiblings$.set(getSiblingKey(name, vKey), vNode);
+        }
+      }
+      vNode = vNode.nextSibling as VNode | null;
+    }
+  } else {
+    if (key === null) {
+      for (let i = 0; i < diffContext.$vSiblingsArray$!.length; i += 2) {
+        const sibling = diffContext.$vSiblingsArray$![i + 1] as ElementVNode | VirtualVNode;
+        if (
+          diffContext.$vSiblingsArray$![i] === nodeName &&
+          !isMatchedSibling(diffContext, sibling)
+        ) {
+          vNodeWithKey = sibling;
+          diffContext.$vSiblingsArray$!.splice(i, 2);
+          break;
+        }
+      }
+    } else {
+      const siblingsKey = getSiblingKey(nodeName, key);
+      const sibling = diffContext.$vSiblings$.get(siblingsKey);
+      if (sibling && !isMatchedSibling(diffContext, sibling)) {
+        vNodeWithKey = sibling as ElementVNode | VirtualVNode;
+        diffContext.$vSiblings$.delete(siblingsKey);
+      }
+    }
+  }
+
+  return vNodeWithKey;
+}
+
+function getSiblingKey(nodeName: string | null, key: string): string {
+  return nodeName ? nodeName + ':' + key : key;
+}
+
+/**
+ * Looks up the keyed node among the upcoming siblings and makes it the current node. The node is
+ * left in place, `cleanupSideBuffer` moves it once the new order is known.
+ *
+ * @returns `true` when the node was not found and needs to be created.
+ */
+function moveOrCreateKeyedNode(
+  diffContext: DiffContext,
+  nodeName: string | null,
+  lookupKey: string | null
+): boolean {
+  const vFound = retrieveChildWithKey(diffContext, nodeName, lookupKey);
+  if (!vFound) {
+    return true;
+  }
+  diffContext.$vCurrent$ = vFound;
+  diffContext.$vNewNode$ = null;
+  return false;
+}
+
+function expectVirtual(diffContext: DiffContext, type: VirtualType, jsxKey: string | null) {
+  const checkKey = type === VirtualType.Fragment;
+  const currentKey = getKey(
+    diffContext.$vCurrent$ as VirtualVNode | ElementVNode | TextVNode | null
+  );
+  const currentIsVirtual = diffContext.$vCurrent$ && vnode_isVirtualVNode(diffContext.$vCurrent$);
+  const isSameNode = currentIsVirtual && currentKey === jsxKey && (checkKey ? !!jsxKey : true);
+
+  if (isSameNode) {
+    // All is good.
+    return;
+  }
+
+  // For fragments without a key, always create a new virtual node (ensures rerender semantics)
+  if (jsxKey === null || diffContext.$isCreationMode$) {
+    vnode_insertVirtualBefore(
+      diffContext.$journal$,
+      diffContext.$vParent$ as VirtualVNode,
+      (diffContext.$vNewNode$ = vnode_newVirtual()),
+      getInsertBefore(diffContext)
+    );
+    (diffContext.$vNewNode$ as VirtualVNode).key = jsxKey;
+    isDev && vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, DEBUG_TYPE, type);
+    return;
+  }
+  if (moveOrCreateKeyedNode(diffContext, null, jsxKey)) {
+    vnode_insertVirtualBefore(
+      diffContext.$journal$,
+      diffContext.$vParent$ as VirtualVNode,
+      (diffContext.$vNewNode$ = vnode_newVirtual()),
+      getInsertBefore(diffContext)
+    );
+    (diffContext.$vNewNode$ as VirtualVNode).key = jsxKey;
+    isDev && vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, DEBUG_TYPE, type);
+  }
+}
+
+function expectComponent(diffContext: DiffContext, component: Function) {
+  const componentMeta = (component as any)[SERIALIZABLE_STATE] as [QRLInternal<OnRenderFn<any>>];
+  let host = (diffContext.$vNewNode$ || diffContext.$vCurrent$) as VirtualVNode | null;
+  const jsxNode = diffContext.$jsxValue$ as JSXNodeInternal;
+  if (componentMeta) {
+    const jsxProps = jsxNode.props as PropsProxy;
+    // QComponent
+    let shouldRender = false;
+    const [componentQRL] = componentMeta;
+
+    const componentHash = componentQRL.$hash$;
+    const vNodeComponentHash = getComponentHash(host, diffContext.$container$.$getObjectById$);
+
+    const lookupKey = jsxNode.key || componentHash;
+    const vNodeLookupKey = getKey(host) || vNodeComponentHash;
+
+    const lookupKeysAreEqual = lookupKey === vNodeLookupKey;
+    const hashesAreEqual = componentHash === vNodeComponentHash;
+
+    if (lookupKeysAreEqual) {
+      if (!hashesAreEqual) {
+        insertNewComponent(diffContext, host, componentQRL, jsxProps);
+        host = diffContext.$vNewNode$ as VirtualVNode;
+        shouldRender = true;
+      }
+    } else {
+      if (moveOrCreateKeyedNode(diffContext, null, lookupKey)) {
+        // `host` is an unrelated sibling here, so its effects must stay.
+        insertNewComponent(diffContext, null, componentQRL, jsxProps);
+        shouldRender = true;
+      }
+      host = (diffContext.$vNewNode$ || diffContext.$vCurrent$) as VirtualVNode;
+    }
+
+    if (host) {
+      const vNodeProps = vnode_getProp<PropsProxy | false | null>(
+        host as VirtualVNode,
+        ELEMENT_PROPS,
+        diffContext.$container$.$getObjectById$
+      );
+      if (!shouldRender) {
+        const propsChanged = handleProps(host, jsxProps, vNodeProps, diffContext.$container$);
+        // if props changed but key is null we need to insert a new component, because we need to execute hooks etc
+        if (propsChanged && jsxNode.key == null) {
+          insertNewComponent(diffContext, host, componentQRL, jsxProps);
+          host = diffContext.$vNewNode$ as VirtualVNode;
+          shouldRender = true;
+        }
+        shouldRender ||= propsChanged;
+      }
+
+      if (shouldRender) {
+        // Assign the new QRL instance to the host.
+        // Unfortunately it is created every time, something to fix in the optimizer.
+        vnode_setProp(host as VirtualVNode, OnRenderProp, componentQRL);
+
+        /**
+         * Mark host as not deleted. The host could have been marked as deleted if it there was a
+         * cleanup run. Now we found it and want to reuse it, so we need to mark it as not deleted.
+         */
+        (host as VirtualVNode).flags &= ~VNodeFlags.Deleted;
+        markVNodeDirty(
+          diffContext.$container$,
+          host as VirtualVNode,
+          ChoreBits.COMPONENT,
+          diffContext.$cursor$
+        );
+      }
+    }
+    descendContentToProject(diffContext, jsxNode.children, host);
+  } else {
+    const lookupKey = jsxNode.key;
+    const vNodeLookupKey = getKey(host);
+    const lookupKeysAreEqual = lookupKey === vNodeLookupKey;
+    const vNodeComponentHash = getComponentHash(host, diffContext.$container$.$getObjectById$);
+    const isInlineComponent = vNodeComponentHash == null;
+
+    if ((host && !isInlineComponent) || !host) {
+      insertNewInlineComponent(diffContext);
+      host = diffContext.$vNewNode$ as VirtualVNode;
+    } else if (!lookupKeysAreEqual) {
+      if (moveOrCreateKeyedNode(diffContext, null, lookupKey)) {
+        // We did not find the inline component, create it.
+        insertNewInlineComponent(diffContext);
+      }
+      host = (diffContext.$vNewNode$ || diffContext.$vCurrent$) as VirtualVNode;
+    }
+    if (host) {
+      let componentHost: VNode | null = host;
+      // Find the closest component host which has `OnRender` prop. This is need for subscriptions context.
+      while (
+        componentHost &&
+        (vnode_isVirtualVNode(componentHost)
+          ? vnode_getProp<OnRenderFn<any> | null>(
+              componentHost as VirtualVNode,
+              OnRenderProp,
+              null
+            ) === null
+          : true)
+      ) {
+        componentHost = componentHost.parent || vnode_getProjectionParentComponent(componentHost);
+      }
+
+      setInlineComponentData(host, component, componentHost, jsxNode.props as Props | null);
+      markVNodeDirty(
+        diffContext.$container$,
+        host,
+        ChoreBits.INLINE_COMPONENT,
+        diffContext.$cursor$
+      );
+    }
+  }
+}
+
+function insertNewComponent(
+  diffContext: DiffContext,
+  host: VNode | null,
+  componentQRL: QRLInternal<OnRenderFn<any>>,
+  jsxProps: Props
+) {
+  if (host) {
+    clearAllEffects(diffContext.$container$, host);
+  }
+  vnode_insertVirtualBefore(
+    diffContext.$journal$,
+    diffContext.$vParent$ as VirtualVNode,
+    (diffContext.$vNewNode$ = vnode_newVirtual()),
+    getInsertBefore(diffContext)
+  );
+  const jsxNode = diffContext.$jsxValue$ as JSXNodeInternal;
+  isDev && vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, DEBUG_TYPE, VirtualType.Component);
+  vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, OnRenderProp, componentQRL);
+  vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, ELEMENT_PROPS, jsxProps);
+  (diffContext.$vNewNode$ as VirtualVNode).key = jsxNode.key;
+}
+
+function insertNewInlineComponent(diffContext: DiffContext) {
+  vnode_insertVirtualBefore(
+    diffContext.$journal$,
+    diffContext.$vParent$ as VirtualVNode,
+    (diffContext.$vNewNode$ = vnode_newVirtual()),
+    getInsertBefore(diffContext)
+  );
+  const jsxNode = diffContext.$jsxValue$ as JSXNodeInternal;
+  isDev &&
+    vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, DEBUG_TYPE, VirtualType.InlineComponent);
+  vnode_setProp(diffContext.$vNewNode$ as VirtualVNode, ELEMENT_PROPS, jsxNode.props);
+  if (jsxNode.key) {
+    (diffContext.$vNewNode$ as VirtualVNode).key = jsxNode.key;
+  }
+}
+
+function expectText(diffContext: DiffContext, text: string) {
+  if (diffContext.$vCurrent$ !== null) {
+    const type = vnode_getType(diffContext.$vCurrent$);
+    if (type === 3 /* Text */) {
+      if (text !== vnode_getText(diffContext.$vCurrent$ as TextVNode)) {
+        vnode_setText(diffContext.$journal$, diffContext.$vCurrent$ as TextVNode, text);
+        return;
+      }
+      return;
+    }
+  }
+  vnode_insertElementBefore(
+    diffContext.$journal$,
+    diffContext.$vParent$,
+    (diffContext.$vNewNode$ = vnode_newText(
+      (qTest ? diffContext.$container$.document : document).createTextNode(text),
+      text
+    )),
+    getCurrentInsertBefore(diffContext)
+  );
+}
+
+/**
+ * Retrieve the key from the VNode.
+ *
+ * @param vNode - VNode to retrieve the key from
+ * @returns Key
+ */
+function getKey(vNode: VirtualVNode | ElementVNode | TextVNode | null): string | null {
+  if (vNode == null || vnode_isTextVNode(vNode)) {
+    return null;
+  }
+  return vNode.key;
+}
+
+/**
+ * Retrieve the component hash from the VNode.
+ *
+ * @param vNode - VNode to retrieve the key from
+ * @param getObject - Function to retrieve the object by id for QComponent QRL
+ * @returns Hash
+ */
+function getComponentHash(vNode: VNode | null, getObject: (id: string) => any): string | null {
+  if (vNode == null || vnode_isTextVNode(vNode)) {
+    return null;
+  }
+  const qrl = vnode_getProp<QRLInternal>(vNode as VirtualVNode, OnRenderProp, getObject);
+  return qrl
+    ? qrl.$hash$
+    : vnode_getProp<string | null>(vNode as VirtualVNode, QComponentHash, null);
+}
+
+/**
+ * Marker class for JSX projection.
+ *
+ * Assume you have component like so
+ *
+ * ```
+ * <SomeComponent>
+ *   some-text
+ *   <span q:slot="name">some more text</span>
+ *   more-text
+ * </SomeComponent>
+ * ```
+ *
+ * Before the `<SomeCompetent/>` is processed its children are transformed into:
+ *
+ * ```
+ *   <Projection q:slot="">
+ *     some-text
+ *     more-text
+ *   </Projection>
+ *   <Projection q:slot="name">
+ *     <span q:slot="name">some more text</span>
+ *   </Projection>
+ * ```
+ */
+function Projection() {}
+
+function handleProps(
+  host: VirtualVNode,
+  jsxProps: PropsProxy,
+  vNodeProps: PropsProxy | false | null,
+  container: ClientContainer
+): boolean {
+  let shouldRender = false;
+  if (vNodeProps) {
+    const constPropsDifferent = handleChangedProps(
+      jsxProps[_CONST_PROPS],
+      vNodeProps[_CONST_PROPS],
+      vNodeProps[_PROPS_HANDLER],
+      container,
+      false
+    );
+    shouldRender ||= constPropsDifferent;
+    if (vNodeProps[_VAR_PROPS] === EMPTY_OBJ && !isPropsEmpty(jsxProps[_VAR_PROPS])) {
+      // The shared empty var props object is frozen, so new props need their own.
+      vNodeProps[_VAR_PROPS] = {};
+    }
+    const varPropsDifferent = handleChangedProps(
+      jsxProps[_VAR_PROPS],
+      vNodeProps[_VAR_PROPS],
+      vNodeProps[_PROPS_HANDLER],
+      container,
+      true
+    );
+    shouldRender ||= varPropsDifferent;
+    // Update the owner after all props have been synced
+    vNodeProps[_OWNER] = (jsxProps as PropsProxy)[_OWNER];
+  } else if (jsxProps) {
+    // SSR drops the props of hosts it didn't serialize; `false` means they had var props.
+    shouldRender = vNodeProps === false || !isPropsEmpty(jsxProps[_VAR_PROPS]);
+    vnode_setProp(host as VirtualVNode, ELEMENT_PROPS, jsxProps);
+  }
+  return shouldRender;
+}
+
+function handleChangedProps(
+  src: Record<string, any> | null | undefined,
+  dst: Record<string, any> | null | undefined,
+  propsHandler: PropsProxyHandler,
+  container: ClientContainer,
+  triggerEffects: boolean = true
+): boolean {
+  if (isPropsEmpty(src) && isPropsEmpty(dst)) {
+    return false;
+  }
+
+  propsHandler.$container$ = container;
+  let changed = false;
+
+  // Update changed/added props from src
+  if (src) {
+    for (const key in src) {
+      if (key === 'children' || key === QBackRefs) {
+        continue;
+      }
+      const newValue = src[key];
+      const oldValue = dst?.[key];
+      // Every parent render creates an equivalent wrapper, but only the old one has subscribers.
+      // handleProps() swaps the props owner, so keep the subscribed instance or they are orphaned.
+      if (dst && newValue !== oldValue && areDiffValuesEqual(newValue, oldValue)) {
+        src[key] = oldValue;
+        continue;
+      }
+      if (
+        !dst ||
+        !(areDiffValuesEqual(newValue, oldValue) || areSignalValuesEqual(newValue, oldValue))
+      ) {
+        if (key === 'class') {
+          if (areClassValuesEqual(newValue, oldValue)) {
+            continue;
+          }
+        } else if (key === 'style') {
+          if (areStyleValuesEqual(newValue, oldValue)) {
+            continue;
+          }
+        }
+        if (triggerEffects) {
+          if (dst) {
+            // Update the value in dst BEFORE triggering effects
+            // so effects see the new value
+            // Note: Value is not triggering effects, because we are modyfing direct VAR_PROPS object
+            dst[key] = newValue;
+          }
+          const didTigger = triggerPropsProxyEffect(propsHandler, key);
+          if (!didTigger) {
+            // If the effect was not triggered, then the prop has changed and we should rerender
+            changed = true;
+          }
+        } else {
+          // Early return for const props (no effects)
+          return true;
+        }
+      }
+    }
+  }
+
+  // Remove props that are in dst but not in src
+  if (dst) {
+    for (const key in dst) {
+      if (key === 'children' || key === QBackRefs) {
+        continue;
+      }
+      if (!src || !_hasOwnProperty.call(src, key)) {
+        if (triggerEffects) {
+          delete dst[key];
+          const didTigger = triggerPropsProxyEffect(propsHandler, key);
+          if (!didTigger) {
+            // If the effect was not triggered, then the prop has changed and we should rerender
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
+  return changed;
+}
+
+function isPropsEmpty(props: Record<string, any> | null | undefined): boolean {
+  if (!props) {
+    return true;
+  }
+  return isObjectEmpty(props);
+}
+
+/**
+ * If vnode is removed, it is necessary to release all subscriptions associated with it.
+ *
+ * This function will traverse the vnode tree in depth-first order and release all subscriptions.
+ *
+ * The function takes into account:
+ *
+ * - Projection nodes by not recursing into them.
+ * - Component nodes by recursing into the component content nodes (which may be projected).
+ *
+ * @param cursorRoot - Optional cursor root (vStartNode) to propagate dirty bits to during diff.
+ */
+export function cleanup(
+  container: ClientContainer,
+  journal: VNodeJournal,
+  vNode: VNode,
+  cursorRoot: VNode | null = null
+) {
+  let vCursor: VNode | null = vNode;
+  const cursorRootData = cursorRoot && isCursor(cursorRoot) ? getCursorData(cursorRoot) : null;
+  // Depth first traversal
+  if (vnode_isTextVNode(vNode)) {
+    markVNodeAsDeleted(vCursor);
+    // Text nodes don't have subscriptions or children;
+    return;
+  }
+  let vParent: VNode | null = null;
+  do {
+    if (cursorRootData && vCursor !== cursorRoot && isCursor(vCursor)) {
+      abandonCursor(container, cursorRootData, vCursor);
+    }
+    const type = vCursor.flags;
+    if (type & VNodeFlags.ELEMENT_OR_VIRTUAL_MASK) {
+      clearAllEffects(container, vCursor);
+      markVNodeAsDeleted(vCursor);
+
+      const isComponent =
+        type & VNodeFlags.Virtual &&
+        vnode_getProp<OnRenderFn<any> | null>(vCursor as VirtualVNode, OnRenderProp, null) !== null;
+      if (isComponent) {
+        // cleanup q:seq content
+        const seq = container.getHostProp<Array<any>>(vCursor as VirtualVNode, ELEMENT_SEQ);
+        if (seq) {
+          for (let i = 0; i < seq.length; i++) {
+            const obj = seq[i];
+            if (isObject(obj)) {
+              const objIsTask = isTask(obj);
+              if (objIsTask) {
+                clearAllEffects(container, obj);
+                if (obj.$flags$ & TaskFlags.VISIBLE_TASK) {
+                  obj.$flags$ |= TaskFlags.NEEDS_CLEANUP;
+                  markVNodeDirty(container, vCursor, ChoreBits.CLEANUP, cursorRoot);
+
+                  // don't call cleanupDestroyable yet, do it by the scheduler
+                  continue;
+                }
+                cleanupDestroyable(obj);
+              }
+              // Stores and plain signals are only producers; their subscriptions are removed
+              // when cleaning the consumers that read them. They don't own reactive backrefs.
+              else if (obj instanceof ComputedSignalImpl || obj instanceof WrappedSignalImpl) {
+                if (obj.$flags$ & ComputedSignalFlags.PRESERVE_ON_SEQ_CLEANUP) {
+                  continue;
+                }
+                if (obj instanceof ComputedSignalImpl) {
+                  obj.$dispose();
+                } else {
+                  clearAllEffects(container, obj as Consumer);
+                }
+              }
+            }
+          }
+        }
+
+        // SPECIAL CASE: If we are a component, we need to descend into the projected content and release the content.
+        const attrs = (vCursor as VirtualVNode).props;
+        if (attrs) {
+          const keys = Object.keys(attrs);
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            if (isSlotProp(key)) {
+              const value = attrs[key];
+              if (value) {
+                attrs[key] = null; // prevent infinite loop
+                const projection =
+                  typeof value === 'string'
+                    ? vnode_locate(container.rootVNode, value)
+                    : (value as unknown as VNode);
+                if (!projection.slotParent) {
+                  continue;
+                }
+                let projectionChild = vnode_getFirstChild(projection);
+                while (projectionChild) {
+                  cleanup(container, journal, projectionChild, cursorRoot);
+                  projectionChild = projectionChild.nextSibling as VNode | null;
+                }
+
+                cleanupStaleUnclaimedProjection(container, journal, projection);
+              }
+            }
+          }
+        }
+      }
+
+      const isProjection = vnode_isProjection(vCursor);
+      // Projected children are cleaned up by their author.
+      if (!isProjection || !vCursor.slotParent) {
+        const vFirstChild = vnode_getFirstChild(vCursor);
+        if (vFirstChild) {
+          vCursor = vFirstChild;
+          continue;
+        }
+      }
+      // TODO: probably can be removed
+      else if (vCursor === vNode) {
+        /**
+         * If it is a projection and we are at the root, then we should only walk the children to
+         * materialize the projection content. This is because we could have references in the vnode
+         * refs map which need to be materialized before cleanup.
+         */
+        const vFirstChild = vnode_getFirstChild(vCursor);
+        if (vFirstChild) {
+          vnode_walkVNode(vFirstChild);
+          return;
+        }
+        clearProjectionFromSlotParent(container, vCursor);
+      }
+    } else if (type & VNodeFlags.Text) {
+      markVNodeAsDeleted(vCursor);
+    }
+    // Out of children
+    if (vCursor === vNode) {
+      // we are where we started, this means that vNode has no children, so we are done.
+      return;
+    }
+    // Out of children, go to next sibling
+    const vNextSibling = vCursor.nextSibling as VNode | null;
+    if (vNextSibling) {
+      vCursor = vNextSibling;
+      continue;
+    }
+
+    // Out of siblings, go to parent
+    vParent = vCursor.parent;
+    while (vParent) {
+      if (vParent === vNode) {
+        // We are back where we started, we are done.
+        return;
+      }
+      const vNextParentSibling = vParent.nextSibling as VNode | null;
+      if (vNextParentSibling) {
+        vCursor = vNextParentSibling;
+        break;
+      }
+      vParent = vParent.parent;
+    }
+    if (vParent == null) {
+      // We are done.
+      return;
+    }
+  } while (true as boolean);
+}
+
+function clearProjectionFromSlotParent(container: ClientContainer, vNode: VNode) {
+  if (!vNode.slotParent) {
+    return;
+  }
+  const slotName = container.getHostProp<string>(vNode, QSlot);
+  if (slotName != null && container.getHostProp(vNode.slotParent, slotName) === vNode) {
+    vnode_setProp(vNode.slotParent, slotName, null);
+  }
+}
+
+function cleanupStaleUnclaimedProjection(
+  container: ClientContainer,
+  journal: VNodeJournal,
+  projection: VNode
+) {
+  // we are removing a node where the projection would go after slot render.
+  // This is not needed, so we need to cleanup still unclaimed projection
+  const projectionParent = projection.parent;
+  if (projectionParent) {
+    const projectionParentType = projectionParent.flags;
+    if (
+      projectionParentType & VNodeFlags.Element &&
+      vnode_getElementName(projectionParent as ElementVNode) === QTemplate
+    ) {
+      // if parent is the q:template element then projection is still unclaimed - remove it
+      clearProjectionFromSlotParent(container, projection);
+      vnode_remove(journal, projectionParent as ElementVNode | VirtualVNode, projection, true);
+    }
+  }
+}
+
+function markVNodeAsDeleted(vCursor: VNode) {
+  /**
+   * Marks vCursor as deleted. We need to do this to prevent chores from running after the vnode is
+   * removed. (for example signal subscriptions)
+   */
+
+  vCursor.flags |= VNodeFlags.Deleted;
+}
+
+function areDiffValuesEqual(newValue: any, oldValue: any): boolean {
+  if (newValue === oldValue) {
+    return true;
+  }
+  return (
+    newValue instanceof WrappedSignalImpl &&
+    oldValue instanceof WrappedSignalImpl &&
+    areWrappedSignalsEqual(oldValue, newValue)
+  );
+}
+
+function areSignalValuesEqual(newValue: any, oldValue: any): boolean {
+  if (newValue === oldValue) {
+    return true;
+  }
+  if (isSignal(newValue) && isSignal(oldValue)) {
+    const unwrappedNew =
+      newValue instanceof WrappedSignalImpl ? newValue.$unwrapIfSignal$() : newValue;
+    const unwrappedOld =
+      oldValue instanceof WrappedSignalImpl ? oldValue.$unwrapIfSignal$() : oldValue;
+    return untrack(() => unwrappedNew.value === unwrappedOld.value);
+  }
+  return false;
+}
+
+function areStyleValuesEqual(newValue: any, oldValue: any): boolean {
+  if (newValue === oldValue) {
+    return true;
+  }
+  if (isSignal(newValue) || isSignal(oldValue)) {
+    return false;
+  }
+  return stringifyStyle(newValue) === stringifyStyle(oldValue);
+}
+
+function areClassValuesEqual(newValue: any, oldValue: any): boolean {
+  if (newValue === oldValue) {
+    return true;
+  }
+  if (isSignal(newValue) || isSignal(oldValue)) {
+    return false;
+  }
+  return serializeClass(newValue) === serializeClass(oldValue);
+}
+
+function areWrappedSignalsEqual(
+  oldSignal: WrappedSignalImpl<any>,
+  newSignal: WrappedSignalImpl<any>
+): boolean {
+  if (oldSignal === newSignal) {
+    return true;
+  }
+  return (
+    newSignal.$func$ === oldSignal.$func$ && areArgumentsEqual(newSignal.$args$, oldSignal.$args$)
+  );
+}
+
+function areArgumentsEqual(oldArgs: any[] | undefined, newArgs: any[] | undefined): boolean {
+  if (oldArgs === newArgs) {
+    return true;
+  }
+  if (!oldArgs || !newArgs || oldArgs.length !== newArgs.length) {
+    return false;
+  }
+  for (let i = 0; i < oldArgs.length; i++) {
+    if (oldArgs[i] !== newArgs[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function containsWrappedSignal(data: unknown[], signal: Signal<any>): boolean {
+  if (!(signal instanceof WrappedSignalImpl)) {
+    return false;
+  }
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    if (item instanceof WrappedSignalImpl && areWrappedSignalsEqual(item, signal)) {
+      return true;
+    }
+  }
+  return false;
+}

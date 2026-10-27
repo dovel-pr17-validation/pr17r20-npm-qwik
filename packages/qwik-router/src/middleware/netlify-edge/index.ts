@@ -1,0 +1,113 @@
+import type { Context } from '@netlify/edge-functions';
+import type {
+  ServerRenderOptions,
+  ServerRequestEvent,
+} from '@qwik.dev/router/middleware/request-handler';
+
+import { setServerPlatform } from '@qwik.dev/core/server';
+import {
+  getErrorHtml,
+  isStaticPath,
+  mergeHeadersCookies,
+  requestHandler,
+} from '@qwik.dev/router/middleware/request-handler';
+import { isDev } from '@qwik.dev/core/build';
+import { limitRequestBody } from '../request-handler/request-body-limit';
+
+// @qwik.dev/router/middleware/netlify-edge
+
+declare const Deno: any;
+/** @public */
+export function createQwikRouter(opts: QwikRouterNetlifyOptions) {
+  if (opts.manifest) {
+    setServerPlatform(opts.manifest);
+  }
+  async function onNetlifyEdgeRequest(request: Request, context: Context) {
+    try {
+      const url = new URL(request.url);
+
+      if (isStaticPath(request.method, url) || url.pathname.startsWith('/.netlify')) {
+        // known static path, let netlify handle it
+        return context.next();
+      }
+
+      const serverRequestEv: ServerRequestEvent<Response> = {
+        mode: 'server',
+        locale: undefined,
+        url,
+        env: Deno.env,
+        request: limitRequestBody(request, opts.requestBodyLimit),
+        getWritableStream: (status, headers, cookies, resolve) => {
+          const { readable, writable } = new TransformStream<Uint8Array>();
+          const response = new Response(readable, {
+            status,
+            headers: mergeHeadersCookies(headers, cookies),
+          });
+          resolve(response);
+          return writable;
+        },
+        getClientConn: () => {
+          return {
+            ip: context.ip,
+            country: context.geo.country?.code,
+          };
+        },
+        platform: context,
+      };
+
+      // send request to qwik router request handler
+      const handledResponse = await requestHandler(serverRequestEv, opts);
+      if (handledResponse) {
+        handledResponse.completion.then((completion) => {
+          if (completion) {
+            console.error(completion);
+          }
+        });
+        const response = await handledResponse.response;
+        if (response) {
+          return response;
+        }
+      }
+
+      // No matching route: respond with a minimal 404 (static paths get a plain message).
+      const notFoundHtml =
+        !request.headers.get('accept')?.includes('text/html') ||
+        isStaticPath(request.method || 'GET', url)
+          ? 'Not Found'
+          : getErrorHtml(404, 'Not Found');
+      return new Response(notFoundHtml, {
+        status: 404,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Not-Found': url.pathname },
+      });
+    } catch (e: any) {
+      console.error(e);
+      return new Response(isDev ? String(e || 'Error') : 'Internal Server Error', {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Error': 'netlify-edge' },
+      });
+    }
+  }
+
+  return onNetlifyEdgeRequest;
+}
+
+/**
+ * @deprecated Use `createQwikRouter` instead. Will be removed in V3
+ * @public
+ */
+export const createQwikCity = createQwikRouter;
+
+/** @public */
+export interface QwikRouterNetlifyOptions extends ServerRenderOptions {
+  /** Maximum request body size in bytes. Defaults to 10 MiB. */
+  requestBodyLimit?: number;
+}
+
+/**
+ * @deprecated Use `QwikRouterNetlifyOptions` instead. Will be removed in V3
+ * @public
+ */
+export type QwikCityNetlifyOptions = QwikRouterNetlifyOptions;
+
+/** @public */
+export interface PlatformNetlify extends Partial<Omit<Context, 'next' | 'cookies'>> {}
